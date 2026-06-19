@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#F9F8F6">
+  <meta name="description" content="考研四科学习规划 · 西安工业大学">
+  <title>考研学习规划 · 西安工业大学</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- ========== Header ========== -->
+    <header class="header">
+      <div class="header-top">
+        <div class="header-title-group">
+          <p class="header-greeting">李嘉敏 <span class="heart-icon">♥</span></p>
+          <h1 class="header-title">考研学习规划</h1>
+        </div>
+        <div class="header-eye" id="headerEye">
+          <svg viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Eyelid / eye shape -->
+            <path d="M4 24C4 24 16 6 32 6C48 6 60 24 60 24C60 24 48 42 32 42C16 42 4 24 4 24Z"
+                  stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+            <!-- Iris -->
+            <circle cx="32" cy="24" r="10" fill="none" stroke="#2D2D2D" stroke-width="1"/>
+            <circle cx="32" cy="24" r="7" fill="#E8EDF8" stroke="#2D2D2D" stroke-width="0.6"/>
+            <!-- Pupil -->
+            <circle cx="32" cy="24" r="3.5" fill="#2D2D2D"/>
+            <circle cx="30" cy="22" r="1.2" fill="#fff" opacity="0.7"/>
+            <!-- Eyelashes top -->
+            <path d="M14 10l-2-5M20 7l-1-5M26 6l0-5M32 5.5l0-5M38 6l0-5M44 7l1-5M50 10l2-5"
+                  stroke="#2D2D2D" stroke-width="0.8" stroke-linecap="round"/>
+            <!-- Decorative swirl -->
+            <path d="M56 30c2-2 5-3 6 0c1 2-1 4-3 3"
+                  stroke="#C2796B" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.5"/>
+            <!-- Bottom lid hint -->
+            <path d="M16 36c4 3 10 4 16 4c6 0 12-1 16-4"
+                  stroke="#2D2D2D" stroke-width="0.5" fill="none" stroke-linecap="round" opacity="0.3"/>
+          </svg>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-school">西安工业大学</span>
+        <span class="badge badge-streak" id="streakBadge">0 天</span>
+      </div>
+      <!-- Overview strip -->
+      <div class="header-strip" id="headerStrip"></div>
+      <div class="data-actions">
+        <button class="btn btn-ghost btn-xs" id="btnExport">导出</button>
+        <button class="btn btn-ghost btn-xs" id="btnImport">导入</button>
+        <span class="sync-hint">多端同步：导出后在其他设备导入</span>
+      </div>
+    </header>
+
+    <!-- ========== Main Content ========== -->
+    <main class="main-content">
+
+      <!-- ▸ 数学二 -->
+      <section class="page active" id="page-math2">
+        <div class="subject-head">
+          <span class="subject-head-icon">Ⅰ</span>
+          <div class="subject-head-info">
+            <span class="subject-head-name">数学二</span>
+            <span class="subject-head-meta">张宇《基础30讲》2027版 · 目标 100+</span>
+          </div>
+        </div>
+        <div id="math2-progress" class="card card-progress"></div>
+        <div id="math2-plan"></div>
+        <div id="math2-checkin" class="card card-checkin"></div>
+        <div id="math2-today-log" class="card card-today-log"></div>
+      </section>
+
+      <!-- ▸ 819数据结构 -->
+      <section class="page" id="page-cs819">
+        <div class="subject-head">
+          <span class="subject-head-icon">Ⅱ</span>
+          <div class="subject-head-info">
+            <span class="subject-head-name">819 数据结构与程序设计</span>
+            <span class="subject-head-meta">王道《数据结构》考研复习指导 · 目标120分+</span>
+          </div>
+        </div>
+        <div id="cs819-progress" class="card card-progress"></div>
+        <div id="cs819-plan"></div>
+        <div id="cs819-checkin" class="card card-checkin"></div>
+        <div id="cs819-today-log" class="card card-today-log"></div>
+      </section>
+
+      <!-- ▸ 英语二 -->
+      <section class="page" id="page-english2">
+        <div class="subject-head">
+          <span class="subject-head-icon">Ⅲ</span>
+          <div class="subject-head-info">
+            <span class="subject-head-name">英语二</span>
+            <span class="subject-head-meta">每日背词不间断 · 2014-2024阅读44篇精翻 · 目标75+</span>
+          </div>
+        </div>
+        <div id="english2-progress" class="card card-progress"></div>
+        <div id="english2-plan"></div>
+        <div id="english2-checkin" class="card card-checkin"></div>
+        <div id="english2-today-log" class="card card-today-log"></div>
+      </section>
+
+      <!-- ▸ 政治 -->
+      <section class="page" id="page-politics">
+        <div class="subject-head">
+          <span class="subject-head-icon">Ⅳ</span>
+          <div class="subject-head-info">
+            <span class="subject-head-name">政治</span>
+            <span class="subject-head-meta">8月启动 · 徐涛强化课+肖1000+肖4肖8 · 目标70+</span>
+          </div>
+        </div>
+        <div id="politics-progress" class="card card-progress"></div>
+        <div id="politics-plan"></div>
+        <div id="politics-checkin" class="card card-checkin"></div>
+        <div id="politics-today-log" class="card card-today-log"></div>
+      </section>
+
+    </main>
+
+    <!-- ========== Bottom Nav ========== -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="math2">
+        <span class="nav-icon">Ⅰ</span>
+        <span class="nav-label">数学</span>
+      </button>
+      <button class="nav-btn" data-page="cs819">
+        <span class="nav-icon">Ⅱ</span>
+        <span class="nav-label">819</span>
+      </button>
+      <button class="nav-btn" data-page="english2">
+        <span class="nav-icon">Ⅲ</span>
+        <span class="nav-label">英语</span>
+      </button>
+      <button class="nav-btn" data-page="politics">
+        <span class="nav-icon">Ⅳ</span>
+        <span class="nav-label">政治</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Celebration overlay -->
+  <div class="celebration" id="celebration">
+    <div class="celebration-content">
+      <span class="celebration-emoji">🎉</span>
+      <p>打卡成功！</p>
+      <p class="celebration-sub">坚持就是胜利，明天继续加油 ✨</p>
+    </div>
+  </div>
+
+  <input type="file" id="importFileInput" accept=".json" style="display:none">
+
+  <script src="js/app.js"></script>
+</body>
+</html>
