@@ -571,7 +571,7 @@ class PushService {
     return !!PushService.getConfig().sendKey;
   }
 
-  static async send(entry, subName) {
+  static async send(entry, subName, chapterName) {
     const config = PushService.getConfig();
     if (!config.sendKey) return { ok: false, error: '未配置 SendKey' };
 
@@ -587,6 +587,7 @@ class PushService {
     const despLines = [
       `**科目**: ${subject}`,
       `**时长**: ${entry.duration}h`,
+      chapterName ? `**章节**: ${chapterName}` : '',
       `**感受**: ${moodMap[entry.mood] || ''}`,
       entry.content ? `**内容**: ${entry.content}` : '',
       `**日期**: ${App.todayStr()} 星期${App.dayOfWeek(App.todayStr())}`,
@@ -1082,7 +1083,12 @@ class App {
 
     // Push to WeChat (non-blocking, failure is silent)
     const sub = SUBJECT_DEFS[subId];
-    PushService.send(entry, sub.name).catch(e => console.log('推送异常:', e));
+    let chapterName = '';
+    if (entry.chapterIdx != null) {
+      const info = this.getChapterByGlobalIndex(subId, entry.chapterIdx);
+      if (info) chapterName = `${info.phase} › ${info.chapter}`;
+    }
+    PushService.send(entry, sub.name, chapterName).catch(e => console.log('推送异常:', e));
 
     // Re-render everything on this page
     this.renderAll();
