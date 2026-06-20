@@ -548,6 +548,74 @@ class StorageManager {
   }
 }
 
+// ─── Push Service ──────────────────────────────────────────
+class PushService {
+  static CONFIG_KEY = 'kaoyan_push_config';
+
+  static getConfig() {
+    try {
+      return JSON.parse(localStorage.getItem(PushService.CONFIG_KEY)) || {
+        sendKey: '',
+        titleTpl: '{subject} 打卡 · {duration}h'
+      };
+    } catch {
+      return { sendKey: '', titleTpl: '{subject} 打卡 · {duration}h' };
+    }
+  }
+
+  static saveConfig(config) {
+    localStorage.setItem(PushService.CONFIG_KEY, JSON.stringify(config));
+  }
+
+  static isConfigured() {
+    return !!PushService.getConfig().sendKey;
+  }
+
+  static async send(entry, subName) {
+    const config = PushService.getConfig();
+    if (!config.sendKey) return { ok: false, error: '未配置 SendKey' };
+
+    const subjectMap = { math2: '数学二', cs819: '819 数据结构', english2: '英语二', politics: '政治' };
+    const moodMap = { easy: '😊 轻松', normal: '😐 一般', hard: '😣 吃力' };
+    const subject = subjectMap[entry.subject] || entry.subject;
+
+    const title = config.titleTpl
+      .replace('{subject}', subject)
+      .replace('{duration}', entry.duration)
+      .replace('{mood}', moodMap[entry.mood] || '');
+
+    const despLines = [
+      `**科目**: ${subject}`,
+      `**时长**: ${entry.duration}h`,
+      `**感受**: ${moodMap[entry.mood] || ''}`,
+      entry.content ? `**内容**: ${entry.content}` : '',
+      `**日期**: ${App.todayStr()} 星期${App.dayOfWeek(App.todayStr())}`,
+    ].filter(Boolean);
+
+    // Add streak info
+    try {
+      const data = StorageManager.load();
+      if (data.streak.current > 0) {
+        despLines.push(`**连续**: ${data.streak.current}天 🔥`);
+      }
+    } catch {}
+
+    const desp = despLines.join('\n\n');
+
+    try {
+      const resp = await fetch(`https://sctapi.ftqq.com/${config.sendKey}.send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, desp })
+      });
+      const data = await resp.json();
+      return { ok: data.code === 0, error: data.code !== 0 ? (data.message || data.info || '未知错误') : null };
+    } catch (e) {
+      return { ok: false, error: '网络请求失败，请检查网络连接' };
+    }
+  }
+}
+
 // ─── App ───────────────────────────────────────────────────
 class App {
   constructor() {
@@ -1012,6 +1080,10 @@ class App {
     this.updateStreak();
     StorageManager.save(this.data);
 
+    // Push to WeChat (non-blocking, failure is silent)
+    const sub = SUBJECT_DEFS[subId];
+    PushService.send(entry, sub.name).catch(e => console.log('推送异常:', e));
+
     // Re-render everything on this page
     this.renderAll();
     this.showCelebration();
@@ -1137,6 +1209,89 @@ class App {
     // Celebration dismiss
     document.getElementById('celebration')?.addEventListener('click', function() {
       this.classList.remove('show');
+    });
+
+    // ── Settings Modal ──────────────────────────────────
+    const settingsModal = document.getElementById('settingsModal');
+    const statusEl = document.getElementById('pushStatus');
+
+    function showStatus(msg, type) {
+      if (!statusEl) return;
+      statusEl.textContent = msg;
+      statusEl.className = `push-status show ${type}`;
+    }
+
+    function hideStatus() {
+      if (statusEl) statusEl.className = 'push-status';
+    }
+
+    function openSettings() {
+      const config = PushService.getConfig();
+      const sendKeyInput = document.getElementById('pushSendKey');
+      const titleInput = document.getElementById('pushTitle');
+      if (sendKeyInput) sendKeyInput.value = config.sendKey || '';
+      if (titleInput) titleInput.value = config.titleTpl || '{subject} 打卡 · {duration}h';
+      hideStatus();
+      settingsModal?.classList.add('show');
+    }
+
+    function closeSettings() {
+      settingsModal?.classList.remove('show');
+      hideStatus();
+    }
+
+    // Open
+    document.getElementById('btnSettings')?.addEventListener('click', openSettings);
+
+    // Close
+    document.getElementById('btnSettingsClose')?.addEventListener('click', closeSettings);
+    settingsModal?.addEventListener('click', function(e) {
+      if (e.target === settingsModal) closeSettings();
+    });
+
+    // Save
+    document.getElementById('btnSaveSettings')?.addEventListener('click', () => {
+      const sendKey = document.getElementById('pushSendKey')?.value?.trim() || '';
+      const titleTpl = document.getElementById('pushTitle')?.value?.trim() || '{subject} 打卡 · {duration}h';
+      PushService.saveConfig({ sendKey, titleTpl });
+      closeSettings();
+      this.showToast(sendKey ? '推送设置已保存 ✅' : '推送设置已清除');
+    });
+
+    // Test push
+    document.getElementById('btnTestPush')?.addEventListener('click', async () => {
+      const sendKey = document.getElementById('pushSendKey')?.value?.trim();
+      if (!sendKey) {
+        showStatus('请先填写 SendKey', 'error');
+        return;
+      }
+      showStatus('正在发送测试推送...', 'loading');
+      // Save key temporarily for the test
+      const currentConfig = PushService.getConfig();
+      PushService.saveConfig({ sendKey, titleTpl: document.getElementById('pushTitle')?.value?.trim() || currentConfig.titleTpl });
+
+      const testEntry = {
+        subject: 'math2',
+        duration: 0,
+        content: '这是一条测试消息，配置正确即可收到 ✅',
+        mood: 'easy',
+        time: new Date().toISOString()
+      };
+      const result = await PushService.send(testEntry, '数学二');
+      if (result.ok) {
+        showStatus('✅ 测试推送成功！请查看微信消息', 'success');
+      } else {
+        showStatus(`❌ 推送失败：${result.error || '未知错误'}`, 'error');
+        // Restore key to input for correction
+        document.getElementById('pushSendKey').value = sendKey;
+      }
+    });
+
+    // ESC key to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && settingsModal?.classList.contains('show')) {
+        closeSettings();
+      }
     });
   }
 }

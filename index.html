@@ -53,6 +53,7 @@
       <div class="data-actions">
         <button class="btn btn-ghost btn-xs" id="btnExport">导出</button>
         <button class="btn btn-ghost btn-xs" id="btnImport">导入</button>
+        <button class="btn btn-ghost btn-xs" id="btnSettings">⚙️ 推送</button>
         <span class="sync-hint">多端同步：导出后在其他设备导入</span>
       </div>
     </header>
@@ -149,6 +150,34 @@
       <span class="celebration-emoji">🎉</span>
       <p>打卡成功！</p>
       <p class="celebration-sub">坚持就是胜利，明天继续加油 ✨</p>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>⚙️ 微信推送设置</span>
+        <button class="modal-close" id="btnSettingsClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">打卡后自动推送到你的微信。使用 <a href="https://sct.ftqq.com" target="_blank" rel="noopener">Server酱</a> 服务，免费稳定。</p>
+        <div class="form-group">
+          <label>SendKey</label>
+          <input type="password" id="pushSendKey" placeholder="从 sct.ftqq.com 获取 SendKey" autocomplete="off">
+          <span class="form-hint">注册后在「发送消息」页面复制 SendKey</span>
+        </div>
+        <div class="form-group">
+          <label>推送标题模板</label>
+          <input type="text" id="pushTitle" placeholder="{subject} 打卡 · {duration}h" value="{subject} 打卡 · {duration}h" autocomplete="off">
+          <span class="form-hint">可用变量：{subject} 科目名、{duration} 时长、{mood} 感受</span>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary btn-sm" id="btnTestPush">📤 测试推送</button>
+          <button class="btn btn-ghost btn-sm" id="btnSaveSettings">保存设置</button>
+        </div>
+        <div class="push-status" id="pushStatus"></div>
+      </div>
     </div>
   </div>
 

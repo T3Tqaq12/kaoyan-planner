@@ -794,6 +794,128 @@ body {
   margin-top: 6px;
 }
 
+/* --- Modal --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  padding: 16px;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 380px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  transform: translateY(12px);
+  transition: transform 0.25s ease;
+}
+
+.modal-overlay.show .modal-card {
+  transform: translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.modal-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+
+.modal-close:hover {
+  background: var(--bg-warm);
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 16px 20px 20px;
+}
+
+.modal-desc {
+  font-size: 0.76rem;
+  color: var(--text-medium);
+  margin-bottom: 16px;
+  line-height: 1.55;
+}
+
+.modal-desc a {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+.form-hint {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-lighter);
+  margin-top: 4px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* --- Push Status --- */
+.push-status {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+  font-weight: 500;
+  display: none;
+  line-height: 1.45;
+}
+
+.push-status.show { display: block; }
+
+.push-status.success {
+  background: var(--accent-green-light);
+  color: #4A7048;
+}
+
+.push-status.error {
+  background: #FBE8E8;
+  color: #C75B5B;
+}
+
+.push-status.loading {
+  background: var(--bg-warm);
+  color: var(--text-medium);
+}
+
 /* --- Scrollbar --- */
 ::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
