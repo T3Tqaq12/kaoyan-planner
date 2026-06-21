@@ -2,13 +2,13 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#F9F8F6">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#F7F5F1">
   <meta name="description" content="考研四科学习规划 · 西安工业大学">
   <title>考研学习规划 · 西安工业大学</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -18,7 +18,17 @@
     <header class="header">
       <div class="header-top">
         <div class="header-title-group">
-          <p class="header-greeting">李嘉敏 <span class="heart-icon">♥</span></p>
+          <p class="header-greeting">李嘉敏 <span class="heart-icon">♥</span>
+            <svg class="sketch-eye" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M3 16C3 16 11 5 24 5C37 5 45 16 45 16C45 16 37 27 24 27C11 27 3 16 3 16Z" stroke="#1A1A1A" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+              <circle cx="24" cy="16" r="4.5" stroke="#1A1A1A" stroke-width="1.1" fill="none"/>
+              <circle cx="25.5" cy="14.5" r="1.3" fill="#1A1A1A" opacity="0.55"/>
+              <path d="M10 8.5L8 6" stroke="#1A1A1A" stroke-width="0.7" stroke-linecap="round"/>
+              <path d="M15.5 6L14.5 3.5" stroke="#1A1A1A" stroke-width="0.7" stroke-linecap="round"/>
+              <path d="M32.5 6L33.5 3.5" stroke="#1A1A1A" stroke-width="0.7" stroke-linecap="round"/>
+              <path d="M38 8.5L40 6" stroke="#1A1A1A" stroke-width="0.7" stroke-linecap="round"/>
+            </svg>
+          </p>
           <h1 class="header-title">考研学习规划</h1>
         </div>
         <!-- Daily Radio Widget -->
@@ -88,7 +98,7 @@
       <!-- ▸ 数学二 -->
       <section class="page active" id="page-math2">
         <div class="subject-head">
-          <span class="subject-head-icon">Ⅰ</span>
+          <span class="subject-head-icon">📐</span>
           <div class="subject-head-info">
             <span class="subject-head-name">数学二</span>
             <span class="subject-head-meta">张宇《基础30讲》2027版 · 目标 100+</span>
@@ -103,7 +113,7 @@
       <!-- ▸ 819数据结构 -->
       <section class="page" id="page-cs819">
         <div class="subject-head">
-          <span class="subject-head-icon">Ⅱ</span>
+          <span class="subject-head-icon">💻</span>
           <div class="subject-head-info">
             <span class="subject-head-name">819 数据结构与程序设计</span>
             <span class="subject-head-meta">王道《数据结构》考研复习指导 · 目标120分+</span>
@@ -118,7 +128,7 @@
       <!-- ▸ 英语二 -->
       <section class="page" id="page-english2">
         <div class="subject-head">
-          <span class="subject-head-icon">Ⅲ</span>
+          <span class="subject-head-icon">📖</span>
           <div class="subject-head-info">
             <span class="subject-head-name">英语二</span>
             <span class="subject-head-meta">每日背词不间断 · 2014-2024阅读44篇精翻 · 目标75+</span>
@@ -133,7 +143,7 @@
       <!-- ▸ 政治 -->
       <section class="page" id="page-politics">
         <div class="subject-head">
-          <span class="subject-head-icon">Ⅳ</span>
+          <span class="subject-head-icon">📰</span>
           <div class="subject-head-info">
             <span class="subject-head-name">政治</span>
             <span class="subject-head-meta">8月启动 · 徐涛强化课+肖1000+肖4肖8 · 目标70+</span>
@@ -150,19 +160,19 @@
     <!-- ========== Bottom Nav ========== -->
     <nav class="bottom-nav">
       <button class="nav-btn active" data-page="math2">
-        <span class="nav-icon">Ⅰ</span>
+        <span class="nav-icon">📐</span>
         <span class="nav-label">数学</span>
       </button>
       <button class="nav-btn" data-page="cs819">
-        <span class="nav-icon">Ⅱ</span>
+        <span class="nav-icon">💻</span>
         <span class="nav-label">819</span>
       </button>
       <button class="nav-btn" data-page="english2">
-        <span class="nav-icon">Ⅲ</span>
+        <span class="nav-icon">📖</span>
         <span class="nav-label">英语</span>
       </button>
       <button class="nav-btn" data-page="politics">
-        <span class="nav-icon">Ⅳ</span>
+        <span class="nav-icon">📰</span>
         <span class="nav-label">政治</span>
       </button>
     </nav>
