@@ -714,6 +714,78 @@ body {
   color: var(--primary-dark);
 }
 
+/* Photo capture in check-in */
+.checkin-photos {
+  margin-top: 6px;
+}
+
+.checkin-photo-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.checkin-photo-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all var(--transition);
+  font-family: var(--font);
+}
+
+.checkin-photo-btn:hover {
+  border-color: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.checkin-photo-preview {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.checkin-photo-thumb-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.checkin-photo-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  display: block;
+}
+
+.checkin-photo-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text);
+  color: #FFF;
+  border: none;
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 2;
+  padding: 0;
+}
+
 /* Today's log */
 .log-entry {
   display: flex;
@@ -1050,6 +1122,236 @@ body {
 }
 
 .breathing-skip:hover { color: rgba(255, 255, 255, 0.8); }
+
+/* --- Photo Wall --- */
+
+.photowall-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.photowall-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pw-container {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(12px);
+  transition: transform 0.25s ease;
+}
+
+.photowall-overlay.show .pw-container {
+  transform: translateY(0);
+}
+
+/* Header */
+.pw-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 10px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.pw-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.pw-filters {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.pw-filters::-webkit-scrollbar { display: none; }
+
+.pw-filter {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text-medium);
+  font-size: 0.7rem;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font);
+  transition: all var(--transition);
+}
+
+.pw-filter:hover { border-color: var(--primary-light); }
+.pw-filter.active {
+  background: var(--primary-dark);
+  color: #FFF;
+  border-color: var(--primary-dark);
+}
+
+.pw-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pw-close:hover { background: var(--bg-warm); color: var(--text); }
+
+/* Grid */
+.pw-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 40px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  align-content: start;
+}
+
+/* Card */
+.pw-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pw-card:active { transform: scale(0.97); }
+
+.pw-card-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+  background: var(--bg-warm);
+}
+
+.pw-card-meta {
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  font-size: 0.66rem;
+  color: var(--text-light);
+}
+
+.pw-card-badge {
+  font-size: 0.6rem;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--accent-pink-light);
+  color: #B08088;
+}
+
+/* Empty state */
+.pw-empty {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-lighter);
+  padding: 40px 20px;
+  text-align: center;
+}
+.pw-empty.show { display: flex; }
+.pw-empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.pw-empty p { font-size: 0.9rem; margin-bottom: 4px; }
+.pw-empty-sub { font-size: 0.75rem !important; }
+
+/* Lightbox */
+.pw-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.pw-lightbox.show { opacity: 1; pointer-events: auto; }
+
+.pw-lightbox img {
+  max-width: 95vw;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.pw-lb-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: #FFF;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pw-lb-close:hover { background: rgba(255,255,255,0.3); }
+
+.pw-lb-info {
+  margin-top: 14px;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 0 20px;
+  line-height: 1.5;
+}
+
+.pw-lb-delete {
+  position: absolute;
+  bottom: 28px;
+  right: 20px;
+  background: rgba(255,255,255,0.1) !important;
+  color: rgba(255,255,255,0.7) !important;
+  border-color: rgba(255,255,255,0.2) !important;
+}
+.pw-lb-delete:hover {
+  background: rgba(255,80,80,0.3) !important;
+  color: #FF8888 !important;
+}
 
 /* --- Modal --- */
 .modal-overlay {

@@ -76,6 +76,7 @@
       <div class="data-actions">
         <button class="btn btn-ghost btn-xs" id="btnExport">导出</button>
         <button class="btn btn-ghost btn-xs" id="btnImport">导入</button>
+        <button class="btn btn-ghost btn-xs" id="btnPhotoWall">🖼️ 照片墙</button>
         <button class="btn btn-ghost btn-xs" id="btnSettings">⚙️ 推送</button>
         <span class="sync-hint">多端同步：导出后在其他设备导入</span>
       </div>
@@ -184,6 +185,36 @@
     <button class="breathing-skip" id="breathingSkip">跳过 ▸</button>
   </div>
 
+  <!-- Photo Wall Overlay -->
+  <div class="photowall-overlay" id="photowallOverlay">
+    <div class="pw-container">
+      <div class="pw-header">
+        <span class="pw-title">📷 学习照片墙</span>
+        <div class="pw-filters" id="pwFilters">
+          <button class="pw-filter active" data-filter="all">全部</button>
+          <button class="pw-filter" data-filter="math2">数学</button>
+          <button class="pw-filter" data-filter="cs819">819</button>
+          <button class="pw-filter" data-filter="english2">英语</button>
+          <button class="pw-filter" data-filter="politics">政治</button>
+        </div>
+        <button class="pw-close" id="pwClose">✕</button>
+      </div>
+      <div class="pw-grid" id="pwGrid"></div>
+      <div class="pw-empty" id="pwEmpty">
+        <span class="pw-empty-icon">📷</span>
+        <p>还没有打卡照片</p>
+        <p class="pw-empty-sub">下次打卡时拍一张吧~</p>
+      </div>
+    </div>
+    <!-- Lightbox -->
+    <div class="pw-lightbox" id="pwLightbox">
+      <button class="pw-lb-close" id="pwLbClose">✕</button>
+      <img id="pwLbImage" src="" alt="">
+      <div class="pw-lb-info" id="pwLbInfo"></div>
+      <button class="btn btn-ghost btn-sm pw-lb-delete" id="pwLbDelete">🗑️ 删除</button>
+    </div>
+  </div>
+
   <!-- Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-card">
@@ -216,6 +247,7 @@
 
   <script src="js/songs.js"></script>
   <script src="js/quotes.js"></script>
+  <script src="js/photos.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

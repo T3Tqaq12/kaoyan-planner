@@ -737,6 +737,7 @@ class App {
   // ── Init ─────────────────────────────────────────────────
   init() {
     this._lastRenderedDate = App.todayStr();
+    this._pendingPhotos = [];
     this.updateStreak();
     this.renderAll();
     this.bindGlobalEvents();
@@ -744,6 +745,7 @@ class App {
     this.renderDailyQuote();
     this.renderCountdown();
     this._startMidnightRefresh();
+    this.initPhotoStore();
   }
 
   // ── Render All ───────────────────────────────────────────
@@ -1009,6 +1011,21 @@ class App {
           <button class="mood-btn" data-mood="hard">😣 吃力</button>
         </div>
       </div>
+      <div class="checkin-photos">
+        <div class="checkin-photo-actions">
+          <label class="checkin-photo-btn">
+            📷 拍照
+            <input type="file" accept="image/*" capture="environment"
+                   onchange="App.instance.handlePhotoCapture(this,'${subId}')" hidden>
+          </label>
+          <label class="checkin-photo-btn">
+            🖼️ 相册
+            <input type="file" accept="image/*"
+                   onchange="App.instance.handlePhotoCapture(this,'${subId}')" hidden>
+          </label>
+        </div>
+        <div class="checkin-photo-preview" id="photoPreview-${subId}"></div>
+      </div>
       <button class="btn btn-primary btn-lg btn-glow" onclick="App.instance.handleCheckin('${subId}')">
         ✨ ${sub.name}打卡
       </button>
@@ -1050,58 +1067,87 @@ class App {
   }
 
   handleCheckin(subId) {
+    const self = this;
     const today = App.todayStr();
-    const duration = parseFloat(document.getElementById(`dur-${subId}`)?.value) || 0;
-    const content = document.getElementById(`content-${subId}`)?.value?.trim() || '';
-    const chapterIdx = document.getElementById(`chapter-${subId}`)?.value;
+    const duration = parseFloat(document.getElementById('dur-' + subId)?.value) || 0;
+    const content = document.getElementById('content-' + subId)?.value?.trim() || '';
+    const chapterIdx = document.getElementById('chapter-' + subId)?.value;
 
     if (duration <= 0 && !content) {
       this.showToast('请填写学习时长或内容');
       return;
     }
 
-    // Build entry
-    const entry = {
-      subject: subId,
-      duration,
-      content,
-      chapterIdx: chapterIdx !== '' ? parseInt(chapterIdx) : null,
-      mood: this.getSelectedMood(subId),
-      time: new Date().toISOString()
-    };
+    // Store pending photos first (async)
+    var pendingPhotos = this._pendingPhotos.filter(function(p) { return p.subject === subId; });
+    this._pendingPhotos = this._pendingPhotos.filter(function(p) { return p.subject !== subId; });
 
-    // Save (replace existing entries for this subject today)
-    if (!this.data.dailyLogs[today]) this.data.dailyLogs[today] = [];
-    this.data.dailyLogs[today] = this.data.dailyLogs[today].filter(e => e.subject !== subId);
-    this.data.dailyLogs[today].push(entry);
+    var photoIds = [];
 
-    // Auto-complete chapter
-    if (chapterIdx !== '' && chapterIdx !== null) {
-      const idx = parseInt(chapterIdx);
-      if (!this.data.completedChapters[subId]) this.data.completedChapters[subId] = [];
-      if (!this.data.completedChapters[subId].includes(idx)) {
-        this.data.completedChapters[subId].push(idx);
+    function saveCheckin() {
+      var entry = {
+        subject: subId,
+        duration: duration,
+        content: content,
+        chapterIdx: chapterIdx !== '' ? parseInt(chapterIdx) : null,
+        mood: self.getSelectedMood(subId),
+        time: new Date().toISOString()
+      };
+      if (photoIds.length > 0) entry.photoIds = photoIds;
+
+      if (!self.data.dailyLogs[today]) self.data.dailyLogs[today] = [];
+      self.data.dailyLogs[today] = self.data.dailyLogs[today].filter(function(e) { return e.subject !== subId; });
+      self.data.dailyLogs[today].push(entry);
+
+      if (chapterIdx !== '' && chapterIdx !== null) {
+        var idx = parseInt(chapterIdx);
+        if (!self.data.completedChapters[subId]) self.data.completedChapters[subId] = [];
+        if (!self.data.completedChapters[subId].includes(idx)) {
+          self.data.completedChapters[subId].push(idx);
+        }
       }
+
+      self.data.streak.lastDate = today;
+      self.updateStreak();
+      StorageManager.save(self.data);
+
+      var sub = SUBJECT_DEFS[subId];
+      var chapterName = '';
+      if (entry.chapterIdx != null) {
+        var info = self.getChapterByGlobalIndex(subId, entry.chapterIdx);
+        if (info) chapterName = info.phase + ' › ' + info.chapter;
+      }
+      PushService.send(entry, sub.name, chapterName).catch(function(e) { console.log('推送异常:', e); });
+
+      self.renderAll();
+      self.showBreathing().then(function() {
+        self.showCelebration();
+      });
     }
 
-    this.data.streak.lastDate = today;
-    this.updateStreak();
-    StorageManager.save(this.data);
-
-    // Push to WeChat (non-blocking, failure is silent)
-    const sub = SUBJECT_DEFS[subId];
-    let chapterName = '';
-    if (entry.chapterIdx != null) {
-      const info = this.getChapterByGlobalIndex(subId, entry.chapterIdx);
-      if (info) chapterName = `${info.phase} › ${info.chapter}`;
+    // Store photos then save
+    if (pendingPhotos.length > 0) {
+      var stored = 0;
+      pendingPhotos.forEach(function(p) {
+        PhotoStore.add({
+          date: today,
+          subject: subId,
+          dataUrl: p.dataUrl,
+          width: p.width,
+          height: p.height,
+          timestamp: new Date().toISOString()
+        }).then(function(id) {
+          photoIds.push(id);
+          stored++;
+          if (stored === pendingPhotos.length) saveCheckin();
+        }).catch(function() {
+          stored++;
+          if (stored === pendingPhotos.length) saveCheckin();
+        });
+      });
+    } else {
+      saveCheckin();
     }
-    PushService.send(entry, sub.name, chapterName).catch(e => console.log('推送异常:', e));
-
-    // Re-render everything on this page
-    this.renderAll();
-    this.showBreathing().then(() => {
-      this.showCelebration();
-    });
   }
 
   // ── Today Log ────────────────────────────────────────────
@@ -1363,6 +1409,173 @@ class App {
     });
   }
 
+  // ── Photo Store ──────────────────────────────────────────
+  initPhotoStore() {
+    if (!PhotoStore || !PhotoStore.isAvailable()) return;
+    PhotoStore.init().then(function() {
+      console.log('PhotoStore ready');
+    }).catch(function() {});
+  }
+
+  // ── Photo Capture ────────────────────────────────────────
+  handlePhotoCapture(input, subId) {
+    var self = this;
+    var files = input.files;
+    if (!files || files.length === 0) return;
+
+    Array.prototype.forEach.call(files, function(file) {
+      PhotoStore.compress(file).then(function(result) {
+        self._pendingPhotos.push({
+          dataUrl: result.dataUrl,
+          width: result.width,
+          height: result.height,
+          subject: subId
+        });
+        self.renderPhotoPreviews(subId);
+      }).catch(function(err) {
+        self.showToast(err.message || '图片处理失败');
+      });
+    });
+
+    // Reset input so same file can be re-selected
+    input.value = '';
+  }
+
+  removePendingPhoto(index, subId) {
+    this._pendingPhotos.splice(index, 1);
+    this.renderPhotoPreviews(subId);
+  }
+
+  renderPhotoPreviews(subId) {
+    var el = document.getElementById('photoPreview-' + subId);
+    if (!el) return;
+
+    if (this._pendingPhotos.length === 0) {
+      el.innerHTML = '';
+      return;
+    }
+
+    el.innerHTML = this._pendingPhotos.map(function(p, i) {
+      return '<span class="checkin-photo-thumb-wrap">' +
+        '<button class="checkin-photo-remove" onclick="App.instance.removePendingPhoto(' + i + ',\'' + subId + '\')">×</button>' +
+        '<img class="checkin-photo-thumb" src="' + p.dataUrl + '" alt="">' +
+      '</span>';
+    }).join('');
+  }
+
+  // ── Photo Wall ───────────────────────────────────────────
+  openPhotoWall() {
+    var self = this;
+    var overlay = document.getElementById('photowallOverlay');
+    if (!overlay) return;
+
+    overlay.classList.add('show');
+    this._pwCurrentFilter = 'all';
+    this.renderPhotoGrid('all');
+    document.body.style.overflow = 'hidden';
+  }
+
+  closePhotoWall() {
+    var overlay = document.getElementById('photowallOverlay');
+    if (overlay) overlay.classList.remove('show');
+    this.closeLightbox();
+    document.body.style.overflow = '';
+  }
+
+  renderPhotoGrid(filterSub) {
+    var self = this;
+    this._pwCurrentFilter = filterSub;
+
+    var gridEl = document.getElementById('pwGrid');
+    var emptyEl = document.getElementById('pwEmpty');
+    if (!gridEl) return;
+
+    // Update filter buttons
+    var filters = document.querySelectorAll('.pw-filter');
+    filters.forEach(function(f) {
+      f.classList.toggle('active', f.dataset.filter === filterSub);
+    });
+
+    var promise = (filterSub === 'all')
+      ? PhotoStore.getAll()
+      : PhotoStore.getBySubject(filterSub);
+
+    promise.then(function(photos) {
+      if (!photos || photos.length === 0) {
+        gridEl.innerHTML = '';
+        if (emptyEl) emptyEl.classList.add('show');
+        return;
+      }
+      if (emptyEl) emptyEl.classList.remove('show');
+
+      var subjectMap = { math2: '数学二', cs819: '819', english2: '英语二', politics: '政治' };
+
+      gridEl.innerHTML = photos.map(function(p) {
+        var dateStr = p.date || '';
+        var subName = subjectMap[p.subject] || p.subject;
+        return '<div class="pw-card" onclick="App.instance.openLightbox(' + p.id + ')">' +
+          '<img class="pw-card-img" src="' + p.dataUrl + '" alt="" loading="lazy">' +
+          '<div class="pw-card-meta">' +
+            '<span>' + dateStr + '</span>' +
+            '<span class="pw-card-badge">' + subName + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }).catch(function() {
+      gridEl.innerHTML = '';
+      if (emptyEl) emptyEl.classList.add('show');
+    });
+  }
+
+  openLightbox(photoId) {
+    var self = this;
+    PhotoStore.getAll().then(function(photos) {
+      var photo = photos.find(function(p) { return p.id === photoId; });
+      if (!photo) return;
+
+      self._pwLightboxId = photoId;
+
+      document.getElementById('pwLbImage').src = photo.dataUrl;
+      var subjectMap = { math2: '数学二', cs819: '819', english2: '英语二', politics: '政治' };
+      var info = (photo.date || '') + ' · ' + (subjectMap[photo.subject] || photo.subject);
+      if (photo.caption) info += '\n' + photo.caption;
+      document.getElementById('pwLbInfo').textContent = info;
+      document.getElementById('pwLightbox').classList.add('show');
+    }).catch(function() {});
+  }
+
+  closeLightbox() {
+    var lb = document.getElementById('pwLightbox');
+    if (lb) lb.classList.remove('show');
+    this._pwLightboxId = null;
+  }
+
+  deletePhoto(photoId) {
+    var self = this;
+    if (!confirm('确定删除这张照片吗？此操作不可撤销。')) return;
+
+    PhotoStore.delete(photoId).then(function() {
+      // Clean up reference in dailyLogs
+      var data = StorageManager.load();
+      var cleaned = false;
+      Object.keys(data.dailyLogs).forEach(function(date) {
+        data.dailyLogs[date].forEach(function(entry) {
+          if (entry.photoIds && entry.photoIds.indexOf(photoId) !== -1) {
+            entry.photoIds = entry.photoIds.filter(function(id) { return id !== photoId; });
+            cleaned = true;
+          }
+        });
+      });
+      if (cleaned) StorageManager.save(data);
+
+      self.closeLightbox();
+      self.renderPhotoGrid(self._pwCurrentFilter || 'all');
+      self.showToast('照片已删除');
+    }).catch(function() {
+      self.showToast('删除失败');
+    });
+  }
+
   // ── Celebration ──────────────────────────────────────────
   showCelebration() {
     const el = document.getElementById('celebration');
@@ -1393,6 +1606,8 @@ class App {
 
   // ── Global Events ────────────────────────────────────────
   bindGlobalEvents() {
+    var self = this;
+
     // Bottom nav
     document.querySelectorAll('.nav-btn').forEach(btn => {
       btn.addEventListener('click', () => this.switchPage(btn.dataset.page));
@@ -1505,10 +1720,47 @@ class App {
       }
     });
 
+    // ── Photo Wall ─────────────────────────────────────
+    var photoWallOverlay = document.getElementById('photowallOverlay');
+    document.getElementById('btnPhotoWall')?.addEventListener('click', function() {
+      self.openPhotoWall();
+    });
+    photoWallOverlay?.addEventListener('click', function(e) {
+      if (e.target === photoWallOverlay) self.closePhotoWall();
+    });
+    document.getElementById('pwClose')?.addEventListener('click', function() {
+      self.closePhotoWall();
+    });
+    // Filter buttons
+    document.querySelectorAll('.pw-filter').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        self.renderPhotoGrid(btn.dataset.filter);
+      });
+    });
+    // Lightbox close
+    var pwLightbox = document.getElementById('pwLightbox');
+    document.getElementById('pwLbClose')?.addEventListener('click', function() {
+      self.closeLightbox();
+    });
+    pwLightbox?.addEventListener('click', function(e) {
+      if (e.target === pwLightbox) self.closeLightbox();
+    });
+    // Delete photo
+    document.getElementById('pwLbDelete')?.addEventListener('click', function() {
+      if (self._pwLightboxId != null) self.deletePhoto(self._pwLightboxId);
+    });
+
     // ESC key to close
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && settingsModal?.classList.contains('show')) {
         closeSettings();
+      }
+      if (e.key === 'Escape' && photoWallOverlay?.classList.contains('show')) {
+        if (document.getElementById('pwLightbox')?.classList.contains('show')) {
+          self.closeLightbox();
+        } else {
+          self.closePhotoWall();
+        }
       }
     });
   }
