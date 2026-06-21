@@ -165,6 +165,25 @@ body {
   color: #A88840;
 }
 
+/* Countdown badge */
+.badge-countdown {
+  background: #E8EDF8;
+  color: #5B7CC7;
+}
+
+/* Daily quote */
+.daily-quote {
+  text-align: center;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.75rem;
+  color: var(--text-light);
+  padding: 4px 20px 2px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  min-height: 1.2em;
+}
+
 /* Header strip */
 .header-strip {
   margin-top: 4px;
@@ -949,6 +968,88 @@ body {
   color: var(--text-light);
   margin-top: 6px;
 }
+
+/* --- Breathing Overlay --- */
+.breathing-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(45, 45, 45, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.breathing-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.breathing-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--primary-light) 0%, var(--primary) 60%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.breathing-circle.inhale {
+  animation: breatheIn 4s ease forwards;
+}
+
+.breathing-circle.hold {
+  animation: breatheHold 2s ease infinite;
+  transform: scale(2);
+}
+
+.breathing-circle.exhale {
+  animation: breatheOut 6s ease forwards;
+}
+
+@keyframes breatheIn {
+  from { transform: scale(1); opacity: 0.3; }
+  to   { transform: scale(2); opacity: 0.8; }
+}
+
+@keyframes breatheHold {
+  0%, 100% { opacity: 0.8; }
+  50%      { opacity: 0.95; box-shadow: 0 0 60px var(--primary-shadow); }
+}
+
+@keyframes breatheOut {
+  from { transform: scale(2); opacity: 0.8; }
+  to   { transform: scale(1); opacity: 0.15; }
+}
+
+.breathing-label {
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #FFF;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+.breathing-skip {
+  position: absolute;
+  bottom: 30px;
+  right: 24px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: color 0.2s;
+}
+
+.breathing-skip:hover { color: rgba(255, 255, 255, 0.8); }
 
 /* --- Modal --- */
 .modal-overlay {

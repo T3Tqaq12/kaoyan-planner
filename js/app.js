@@ -736,10 +736,14 @@ class App {
 
   // ── Init ─────────────────────────────────────────────────
   init() {
+    this._lastRenderedDate = App.todayStr();
     this.updateStreak();
     this.renderAll();
     this.bindGlobalEvents();
     this.initRadio();
+    this.renderDailyQuote();
+    this.renderCountdown();
+    this._startMidnightRefresh();
   }
 
   // ── Render All ───────────────────────────────────────────
@@ -748,6 +752,8 @@ class App {
     this.renderStreakBadge();
     this.renderSubjectPage('math2');
     if (this.currentPage !== 'math2') this.renderSubjectPage(this.currentPage);
+    this.renderDailyQuote();
+    this.renderCountdown();
   }
 
   renderStreakBadge() {
@@ -1093,7 +1099,9 @@ class App {
 
     // Re-render everything on this page
     this.renderAll();
-    this.showCelebration();
+    this.showBreathing().then(() => {
+      this.showCelebration();
+    });
   }
 
   // ── Today Log ────────────────────────────────────────────
@@ -1251,6 +1259,108 @@ class App {
     iframe.setAttribute('loading', 'lazy');
     iframe.src = embedUrl;
     embedEl.appendChild(iframe);
+  }
+
+  // ── Daily Quote ─────────────────────────────────────────
+  renderDailyQuote() {
+    const el = document.getElementById('dailyQuote');
+    if (!el) return;
+    if (typeof DailyQuote === 'undefined' || !DailyQuote.QUOTES) {
+      el.style.display = 'none';
+      return;
+    }
+    const quote = DailyQuote.getTodayQuote();
+    if (quote) {
+      el.style.display = '';
+      el.innerHTML = '&ldquo;' + quote.text + '&rdquo;<br><span style="font-style:normal;font-size:0.65rem;color:var(--text-lighter)">——' + quote.source + '</span>';
+    }
+  }
+
+  // ── Countdown ─────────────────────────────────────────────
+  renderCountdown() {
+    const el = document.getElementById('countdownBadge');
+    if (!el) return;
+    const target = new Date('2026-12-19');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff = target.getTime() - today.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    if (days > 0) {
+      el.textContent = '距考研 ' + days + ' 天';
+    } else if (days === 0) {
+      el.textContent = '🎉 考研日！';
+    } else {
+      el.textContent = '考研已结束';
+    }
+  }
+
+  // ── Midnight Refresh ─────────────────────────────────────
+  _startMidnightRefresh() {
+    var self = this;
+    this._midnightTimer = setInterval(function() {
+      var today = App.todayStr();
+      if (today !== self._lastRenderedDate) {
+        self._lastRenderedDate = today;
+        self.renderDailyQuote();
+        self.renderCountdown();
+        self.renderHeaderStrip();
+        self.renderStreakBadge();
+        // Refresh radio song too
+        var song = DailyRadio ? DailyRadio.getTodaySong() : null;
+        if (song) self.renderRadioPanel(song);
+      }
+    }, 60000); // check every minute
+  }
+
+  // ── Breathing Animation ───────────────────────────────────
+  showBreathing() {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('breathingOverlay');
+      const circle = document.getElementById('breathingCircle');
+      const label = document.getElementById('breathingLabel');
+      const skipBtn = document.getElementById('breathingSkip');
+
+      if (!overlay || !circle || !label) { resolve(); return; }
+
+      var resolved = false;
+      var timers = [];
+
+      function done() {
+        if (resolved) return;
+        resolved = true;
+        timers.forEach(clearTimeout);
+        overlay.classList.remove('active');
+        circle.classList.remove('inhale', 'hold', 'exhale');
+        resolve();
+      }
+
+      if (skipBtn) {
+        skipBtn.onclick = function(e) {
+          e.stopPropagation();
+          done();
+        };
+      }
+
+      // Phase 1: inhale 4s
+      overlay.classList.add('active');
+      circle.classList.add('inhale');
+      label.textContent = '吸气…';
+      timers.push(setTimeout(function() {
+        // Phase 2: hold 4s
+        circle.classList.remove('inhale');
+        circle.classList.add('hold');
+        label.textContent = '屏息…';
+        timers.push(setTimeout(function() {
+          // Phase 3: exhale 6s
+          circle.classList.remove('hold');
+          circle.classList.add('exhale');
+          label.textContent = '呼气…';
+          timers.push(setTimeout(function() {
+            done();
+          }, 6000));
+        }, 4000));
+      }, 4000));
+    });
   }
 
   // ── Celebration ──────────────────────────────────────────

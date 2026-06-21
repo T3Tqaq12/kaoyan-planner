@@ -68,9 +68,11 @@
       <div class="header-badges">
         <span class="badge badge-school">西安工业大学</span>
         <span class="badge badge-streak" id="streakBadge">0 天</span>
+        <span class="badge badge-countdown" id="countdownBadge">距考研 -- 天</span>
       </div>
       <!-- Overview strip -->
       <div class="header-strip" id="headerStrip"></div>
+      <div class="daily-quote" id="dailyQuote"></div>
       <div class="data-actions">
         <button class="btn btn-ghost btn-xs" id="btnExport">导出</button>
         <button class="btn btn-ghost btn-xs" id="btnImport">导入</button>
@@ -174,6 +176,14 @@
     </div>
   </div>
 
+  <!-- Breathing overlay -->
+  <div class="breathing-overlay" id="breathingOverlay">
+    <div class="breathing-circle" id="breathingCircle">
+      <span class="breathing-label" id="breathingLabel">吸气…</span>
+    </div>
+    <button class="breathing-skip" id="breathingSkip">跳过 ▸</button>
+  </div>
+
   <!-- Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-card">
@@ -205,6 +215,7 @@
   <input type="file" id="importFileInput" accept=".json" style="display:none">
 
   <script src="js/songs.js"></script>
+  <script src="js/quotes.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
