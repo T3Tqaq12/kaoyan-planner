@@ -571,7 +571,7 @@ class PushService {
     return !!PushService.getConfig().sendKey;
   }
 
-  static async send(entry, subName, chapterName) {
+  static async send(entry, subName, chapterName, photoCount) {
     const config = PushService.getConfig();
     if (!config.sendKey) return { ok: false, error: '未配置 SendKey' };
 
@@ -590,6 +590,7 @@ class PushService {
       chapterName ? `**章节**: ${chapterName}` : '',
       `**感受**: ${moodMap[entry.mood] || ''}`,
       entry.content ? `**内容**: ${entry.content}` : '',
+      photoCount > 0 ? `**照片**: ${photoCount} 张 📷` : '',
       `**日期**: ${App.todayStr()} 星期${App.dayOfWeek(App.todayStr())}`,
     ].filter(Boolean);
 
@@ -1117,7 +1118,7 @@ class App {
         var info = self.getChapterByGlobalIndex(subId, entry.chapterIdx);
         if (info) chapterName = info.phase + ' › ' + info.chapter;
       }
-      PushService.send(entry, sub.name, chapterName).catch(function(e) { console.log('推送异常:', e); });
+      PushService.send(entry, sub.name, chapterName, photoIds.length).catch(function(e) { console.log('推送异常:', e); });
 
       self.renderAll();
       self.showBreathing().then(function() {
