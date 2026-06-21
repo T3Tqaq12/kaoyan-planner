@@ -21,27 +21,48 @@
           <p class="header-greeting">李嘉敏 <span class="heart-icon">♥</span></p>
           <h1 class="header-title">考研学习规划</h1>
         </div>
-        <div class="header-eye" id="headerEye">
-          <svg viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Eyelid / eye shape -->
-            <path d="M4 24C4 24 16 6 32 6C48 6 60 24 60 24C60 24 48 42 32 42C16 42 4 24 4 24Z"
-                  stroke="#2D2D2D" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-            <!-- Iris -->
-            <circle cx="32" cy="24" r="10" fill="none" stroke="#2D2D2D" stroke-width="1"/>
-            <circle cx="32" cy="24" r="7" fill="#E8EDF8" stroke="#2D2D2D" stroke-width="0.6"/>
-            <!-- Pupil -->
-            <circle cx="32" cy="24" r="3.5" fill="#2D2D2D"/>
-            <circle cx="30" cy="22" r="1.2" fill="#fff" opacity="0.7"/>
-            <!-- Eyelashes top -->
-            <path d="M14 10l-2-5M20 7l-1-5M26 6l0-5M32 5.5l0-5M38 6l0-5M44 7l1-5M50 10l2-5"
-                  stroke="#2D2D2D" stroke-width="0.8" stroke-linecap="round"/>
-            <!-- Decorative swirl -->
-            <path d="M56 30c2-2 5-3 6 0c1 2-1 4-3 3"
-                  stroke="#C2796B" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.5"/>
-            <!-- Bottom lid hint -->
-            <path d="M16 36c4 3 10 4 16 4c6 0 12-1 16-4"
-                  stroke="#2D2D2D" stroke-width="0.5" fill="none" stroke-linecap="round" opacity="0.3"/>
-          </svg>
+        <!-- Daily Radio Widget -->
+        <div class="header-radio" id="headerRadio">
+          <button class="radio-icon-btn" id="radioIconBtn" aria-label="每日电台">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Music note circles (speakers) -->
+              <circle cx="13" cy="36" r="5" stroke="#2D2D2D" stroke-width="1.1" fill="none"/>
+              <circle cx="35" cy="28" r="5" stroke="#2D2D2D" stroke-width="1.1" fill="none"/>
+              <path d="M18 36V12L40 8V28" stroke="#2D2D2D" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+              <path d="M40 8L18 12" stroke="#C2796B" stroke-width="0.7" stroke-linecap="round" opacity="0.45"/>
+              <!-- Now playing bars -->
+              <rect x="11" y="28" width="1.5" height="4" rx="0.5" fill="#C2796B" opacity="0.6">
+                <animate attributeName="height" values="4;2;4" dur="1.2s" repeatCount="indefinite"/>
+                <animate attributeName="y" values="28;30;28" dur="1.2s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="14" y="27" width="1.5" height="5" rx="0.5" fill="#C2796B" opacity="0.5">
+                <animate attributeName="height" values="5;3;5" dur="0.9s" repeatCount="indefinite"/>
+                <animate attributeName="y" values="27;29;27" dur="0.9s" repeatCount="indefinite"/>
+              </rect>
+            </svg>
+            <span class="radio-live-dot"></span>
+          </button>
+
+          <!-- Backdrop -->
+          <div class="radio-backdrop" id="radioBackdrop"></div>
+
+          <!-- Dropdown Panel -->
+          <div class="radio-dropdown" id="radioDropdown">
+            <div class="radio-dd-header">
+              <span class="radio-dd-title">🎵 每日电台</span>
+              <span class="radio-dd-date" id="radioDate"></span>
+            </div>
+            <div class="radio-dd-body">
+              <p class="radio-dd-song" id="radioSongName"></p>
+              <p class="radio-dd-artist" id="radioSongArtist"></p>
+            </div>
+            <div class="radio-dd-actions">
+              <a class="btn btn-primary btn-sm radio-open-link" id="radioOpenLink"
+                 href="#" target="_blank" rel="noopener">在 Apple Music 中打开</a>
+              <button class="btn btn-ghost btn-sm" id="radioPreviewBtn">▶ 试听</button>
+            </div>
+            <div class="radio-dd-embed" id="radioEmbed"></div>
+          </div>
         </div>
       </div>
       <div class="header-badges">
@@ -183,6 +204,7 @@
 
   <input type="file" id="importFileInput" accept=".json" style="display:none">
 
+  <script src="js/songs.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

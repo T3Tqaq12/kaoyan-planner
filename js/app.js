@@ -739,6 +739,7 @@ class App {
     this.updateStreak();
     this.renderAll();
     this.bindGlobalEvents();
+    this.initRadio();
   }
 
   // ── Render All ───────────────────────────────────────────
@@ -1149,6 +1150,107 @@ class App {
     this.renderSubjectPage(pageName);
 
     document.querySelector('.main-content').scrollTop = 0;
+  }
+
+  // ── Daily Radio ─────────────────────────────────────────
+  initRadio() {
+    if (typeof DailyRadio === 'undefined' || !DailyRadio.PLAYLIST || DailyRadio.PLAYLIST.length === 0) {
+      const radio = document.getElementById('headerRadio');
+      if (radio) radio.style.display = 'none';
+      return;
+    }
+
+    const song = DailyRadio.getTodaySong();
+    if (song) this.renderRadioPanel(song);
+
+    // Toggle on icon click
+    document.getElementById('radioIconBtn')?.addEventListener('click', () => {
+      this.toggleRadio();
+    });
+
+    // Close on backdrop click
+    document.getElementById('radioBackdrop')?.addEventListener('click', () => {
+      this.closeRadio();
+    });
+
+    // Preview embed toggle
+    document.getElementById('radioPreviewBtn')?.addEventListener('click', () => {
+      this.toggleRadioPreview();
+    });
+
+    // ESC key to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.closeRadio();
+    });
+  }
+
+  renderRadioPanel(song) {
+    const songEl = document.getElementById('radioSongName');
+    const artistEl = document.getElementById('radioSongArtist');
+    const linkEl = document.getElementById('radioOpenLink');
+    const dateEl = document.getElementById('radioDate');
+
+    if (songEl) songEl.textContent = song.name;
+    if (artistEl) artistEl.textContent = song.artist;
+    if (linkEl) linkEl.href = song.url;
+
+    if (dateEl) {
+      const d = new Date();
+      dateEl.textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日';
+    }
+  }
+
+  toggleRadio() {
+    const panel = document.getElementById('radioDropdown');
+    const backdrop = document.getElementById('radioBackdrop');
+    const isOpen = panel?.classList.contains('open');
+
+    if (isOpen) {
+      this.closeRadio();
+    } else {
+      // Refresh song in case date changed since page load
+      const song = DailyRadio.getTodaySong();
+      if (song) this.renderRadioPanel(song);
+      panel?.classList.add('open');
+      backdrop?.classList.add('show');
+    }
+  }
+
+  closeRadio() {
+    document.getElementById('radioDropdown')?.classList.remove('open');
+    document.getElementById('radioBackdrop')?.classList.remove('show');
+  }
+
+  toggleRadioPreview() {
+    const embedEl = document.getElementById('radioEmbed');
+    const btn = document.getElementById('radioPreviewBtn');
+    if (!embedEl) return;
+
+    const isShown = embedEl.classList.contains('show');
+    if (isShown) {
+      embedEl.classList.remove('show');
+      if (btn) btn.textContent = '▶ 试听';
+    } else {
+      embedEl.classList.add('show');
+      if (btn) btn.textContent = '▼ 收起';
+      this.ensureRadioEmbed();
+    }
+  }
+
+  ensureRadioEmbed() {
+    const embedEl = document.getElementById('radioEmbed');
+    if (!embedEl || embedEl.querySelector('iframe')) return;
+
+    const song = DailyRadio.getTodaySong();
+    if (!song) return;
+    const embedUrl = DailyRadio.getEmbedUrl(song.url);
+
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('allow', 'autoplay *; encrypted-media *; fullscreen *');
+    iframe.setAttribute('sandbox', 'allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation');
+    iframe.setAttribute('loading', 'lazy');
+    iframe.src = embedUrl;
+    embedEl.appendChild(iframe);
   }
 
   // ── Celebration ──────────────────────────────────────────

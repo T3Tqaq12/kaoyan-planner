@@ -1,0 +1,62 @@
+const fs = require('fs');
+const content = fs.readFileSync('C:\\Users\\T3T\\.claude\\projects\\C--Windows-System32\\e52f6212-e464-4013-83e0-f35ad23c4a97\\tool-results\\bz3j1lpdu.txt', 'utf-8');
+const startIdx = content.indexOf('{"data":[{"intent"');
+const endIdx = content.indexOf('</script>', startIdx);
+const jsonStr = content.substring(startIdx, endIdx);
+const data = JSON.parse(jsonStr);
+const tracks = data.data[0].data.sections[1].items;
+
+var out = '/* 每日电台 · 歌曲播放列表 */\n';
+out += '/* 数据来源：Apple Music 播放列表「音乐回忆：历年总览」 */\n';
+out += '/* 共 ' + tracks.length + ' 首 · 更新于 ' + new Date().toISOString().slice(0,10) + ' */\n\n';
+out += 'const DAILY_RADIO_PLAYLIST = [\n';
+
+tracks.forEach(function(t) {
+    var name = JSON.stringify(t.title);
+    var artist = JSON.stringify(t.artistName || '?');
+    var url = JSON.stringify(t.contentDescriptor.url);
+    out += '  { name: ' + name + ', artist: ' + artist + ', url: ' + url + ' },\n';
+});
+
+out += '];\n\n';
+out += '/* --- DailyRadio API --------------------------------------- */\n\n';
+out += '(function() {\n';
+out += '  function hashCode(str) {\n';
+out += '    var hash = 5381;\n';
+out += '    for (var i = 0; i < str.length; i++) {\n';
+out += '      hash = ((hash << 5) + hash) + str.charCodeAt(i);\n';
+out += '      hash = hash | 0;\n';
+out += '    }\n';
+out += '    return hash;\n';
+out += '  }\n\n';
+out += '  function getSong(dateStr) {\n';
+out += '    if (!DAILY_RADIO_PLAYLIST || DAILY_RADIO_PLAYLIST.length === 0) return null;\n';
+out += '    var index = Math.abs(hashCode(dateStr)) % DAILY_RADIO_PLAYLIST.length;\n';
+out += '    var d = new Date(dateStr);\n';
+out += '    d.setDate(d.getDate() - 1);\n';
+out += '    var ys = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");\n';
+out += '    var yesterdayIndex = Math.abs(hashCode(ys)) % DAILY_RADIO_PLAYLIST.length;\n';
+out += '    if (index === yesterdayIndex) index = (index + 1) % DAILY_RADIO_PLAYLIST.length;\n';
+out += '    return DAILY_RADIO_PLAYLIST[index];\n';
+out += '  }\n\n';
+out += '  function getTodaySong() {\n';
+out += '    var d = new Date();\n';
+out += '    var today = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");\n';
+out += '    return getSong(today);\n';
+out += '  }\n\n';
+out += '  function getEmbedUrl(appleMusicUrl) {\n';
+out += '    return appleMusicUrl.replace("music.apple.com", "embed.music.apple.com");\n';
+out += '  }\n\n';
+out += '  window.DailyRadio = {\n';
+out += '    PLAYLIST: DAILY_RADIO_PLAYLIST,\n';
+out += '    getSong: getSong,\n';
+out += '    getTodaySong: getTodaySong,\n';
+out += '    getEmbedUrl: getEmbedUrl\n';
+out += '  };\n';
+out += '})();\n';
+
+var destPath = 'D:\\考研学习规划\\js\\songs.js';
+fs.writeFileSync(destPath, out, 'utf-8');
+console.log('Written to', destPath);
+console.log('File size:', Buffer.byteLength(out, 'utf-8'), 'bytes');
+console.log('Song count:', tracks.length);
