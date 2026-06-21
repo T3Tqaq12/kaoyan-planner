@@ -556,10 +556,11 @@ class PushService {
     try {
       return JSON.parse(localStorage.getItem(PushService.CONFIG_KEY)) || {
         sendKey: '',
+        githubToken: '',
         titleTpl: '{subject} 打卡 · {duration}h'
       };
     } catch {
-      return { sendKey: '', titleTpl: '{subject} 打卡 · {duration}h' };
+      return { sendKey: '', githubToken: '', titleTpl: '{subject} 打卡 · {duration}h' };
     }
   }
 
@@ -571,7 +572,7 @@ class PushService {
     return !!PushService.getConfig().sendKey;
   }
 
-  static async send(entry, subName, chapterName, photoCount) {
+  static async send(entry, subName, chapterName, photoCount, photoUrls) {
     const config = PushService.getConfig();
     if (!config.sendKey) return { ok: false, error: '未配置 SendKey' };
 
@@ -602,7 +603,14 @@ class PushService {
       }
     } catch {}
 
-    const desp = despLines.join('\n\n');
+    var desp = despLines.join('\n\n');
+
+    // Append photo images if URLs provided
+    if (photoUrls && photoUrls.length > 0) {
+      desp += '\n\n' + photoUrls.map(function(u) {
+        return '![](' + u + ')';
+      }).join('\n');
+    }
 
     try {
       const resp = await fetch(`https://sctapi.ftqq.com/${config.sendKey}.send`, {
@@ -615,6 +623,31 @@ class PushService {
     } catch (e) {
       return { ok: false, error: '网络请求失败，请检查网络连接' };
     }
+  }
+
+  static async uploadToGitHub(dataUrl, filename) {
+    var config = PushService.getConfig();
+    if (!config.githubToken) return null;
+    try {
+      var base64 = dataUrl.split(',')[1];
+      if (!base64) return null;
+      var resp = await fetch('https://api.github.com/repos/T3Tqaq12/kaoyan-planner/contents/photos/' + filename, {
+        method: 'PUT',
+        headers: {
+          Authorization: 'token ' + config.githubToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: '打卡照片 ' + filename.replace('.jpg', ''),
+          content: base64,
+          branch: 'master'
+        })
+      });
+      if (!resp.ok) { console.warn('GitHub upload failed:', resp.status); return null; }
+      var result = await resp.json();
+      if (result.content && result.content.download_url) return result.content.download_url;
+      return 'https://raw.githubusercontent.com/T3Tqaq12/kaoyan-planner/master/photos/' + filename;
+    } catch (e) { console.warn('GitHub upload error:', e); return null; }
   }
 }
 
@@ -1085,7 +1118,7 @@ class App {
 
     var photoIds = [];
 
-    function saveCheckin() {
+    async function saveCheckin() {
       var entry = {
         subject: subId,
         duration: duration,
@@ -1118,7 +1151,20 @@ class App {
         var info = self.getChapterByGlobalIndex(subId, entry.chapterIdx);
         if (info) chapterName = info.phase + ' › ' + info.chapter;
       }
-      PushService.send(entry, sub.name, chapterName, photoIds.length).catch(function(e) { console.log('推送异常:', e); });
+
+      // Upload photos to GitHub for push display
+      var photoUrls = [];
+      if (pendingPhotos.length > 0 && PushService.getConfig().githubToken) {
+        for (var pi = 0; pi < pendingPhotos.length; pi++) {
+          var p = pendingPhotos[pi];
+          var ts = Date.now();
+          var filename = today + '_' + subId + '_' + ts + '_' + (pi + 1) + '.jpg';
+          var url = await PushService.uploadToGitHub(p.dataUrl, filename);
+          if (url) photoUrls.push(url);
+        }
+      }
+
+      PushService.send(entry, sub.name, chapterName, photoIds.length, photoUrls).catch(function(e) { console.log('推送异常:', e); });
 
       self.renderAll();
       self.showBreathing().then(function() {
@@ -1663,8 +1709,10 @@ class App {
       const config = PushService.getConfig();
       const sendKeyInput = document.getElementById('pushSendKey');
       const titleInput = document.getElementById('pushTitle');
+      const githubTokenInput = document.getElementById('pushGithubToken');
       if (sendKeyInput) sendKeyInput.value = config.sendKey || '';
       if (titleInput) titleInput.value = config.titleTpl || '{subject} 打卡 · {duration}h';
+      if (githubTokenInput) githubTokenInput.value = config.githubToken || '';
       hideStatus();
       settingsModal?.classList.add('show');
     }
@@ -1687,7 +1735,8 @@ class App {
     document.getElementById('btnSaveSettings')?.addEventListener('click', () => {
       const sendKey = document.getElementById('pushSendKey')?.value?.trim() || '';
       const titleTpl = document.getElementById('pushTitle')?.value?.trim() || '{subject} 打卡 · {duration}h';
-      PushService.saveConfig({ sendKey, titleTpl });
+      const githubToken = document.getElementById('pushGithubToken')?.value?.trim() || '';
+      PushService.saveConfig({ sendKey, titleTpl, githubToken });
       closeSettings();
       this.showToast(sendKey ? '推送设置已保存 ✅' : '推送设置已清除');
     });
@@ -1702,7 +1751,8 @@ class App {
       showStatus('正在发送测试推送...', 'loading');
       // Save key temporarily for the test
       const currentConfig = PushService.getConfig();
-      PushService.saveConfig({ sendKey, titleTpl: document.getElementById('pushTitle')?.value?.trim() || currentConfig.titleTpl });
+      const githubToken = document.getElementById('pushGithubToken')?.value?.trim() || '';
+      PushService.saveConfig({ sendKey, titleTpl: document.getElementById('pushTitle')?.value?.trim() || currentConfig.titleTpl, githubToken });
 
       const testEntry = {
         subject: 'math2',
@@ -1711,7 +1761,7 @@ class App {
         mood: 'easy',
         time: new Date().toISOString()
       };
-      const result = await PushService.send(testEntry, '数学二');
+      const result = await PushService.send(testEntry, '数学二', '', 0, []);
       if (result.ok) {
         showStatus('✅ 测试推送成功！请查看微信消息', 'success');
       } else {

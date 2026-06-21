@@ -223,11 +223,16 @@
         <button class="modal-close" id="btnSettingsClose">✕</button>
       </div>
       <div class="modal-body">
-        <p class="modal-desc">打卡后自动推送到你的微信。使用 <a href="https://sct.ftqq.com" target="_blank" rel="noopener">Server酱</a> 服务，免费稳定。</p>
+        <p class="modal-desc">打卡后自动推送到你的微信。使用 <a href="https://sct.ftqq.com" target="_blank" rel="noopener">Server酱</a> 服务，免费稳定。<br>如需推送打卡照片，请配置下方 GitHub Token。</p>
         <div class="form-group">
           <label>SendKey</label>
           <input type="password" id="pushSendKey" placeholder="从 sct.ftqq.com 获取 SendKey" autocomplete="off">
           <span class="form-hint">注册后在「发送消息」页面复制 SendKey</span>
+        </div>
+        <div class="form-group">
+          <label>GitHub Token（可选，用于推送照片）</label>
+          <input type="password" id="pushGithubToken" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+          <span class="form-hint">GitHub → Settings → Developer settings → Personal access tokens → 勾选 repo → 生成。<br>仅用于上传照片到你自己的 kaoyan-planner 仓库</span>
         </div>
         <div class="form-group">
           <label>推送标题模板</label>
