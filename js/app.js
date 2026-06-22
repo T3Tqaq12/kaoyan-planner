@@ -1363,9 +1363,10 @@ class App {
       return;
     }
     const quote = DailyQuote.getTodayQuote();
+    var dateHint = App.todayStr().split('-').slice(1).join('月') + '日';
     if (quote) {
       el.style.display = '';
-      el.innerHTML = '&ldquo;' + quote.text + '&rdquo;<br><span style="font-style:normal;font-size:0.65rem;color:var(--text-lighter)">——' + quote.source + '</span>';
+      el.innerHTML = '&ldquo;' + quote.text + '&rdquo;<br><span style="font-style:normal;font-size:0.6rem;color:var(--text-muted)">今日 · ' + dateHint + ' &nbsp;|&nbsp; ' + quote.source + '</span>';
     }
   }
 
@@ -1518,7 +1519,7 @@ class App {
 
     overlay.classList.add('show');
     this._pwCurrentFilter = 'all';
-    this.renderPhotoGrid('all');
+    this.renderPhotoSpread('all');
     document.body.style.overflow = 'hidden';
   }
 
@@ -1529,13 +1530,13 @@ class App {
     document.body.style.overflow = '';
   }
 
-  renderPhotoGrid(filterSub) {
+  renderPhotoSpread(filterSub) {
     var self = this;
     this._pwCurrentFilter = filterSub;
 
-    var gridEl = document.getElementById('pwGrid');
+    var spreadEl = document.getElementById('pwSpread');
     var emptyEl = document.getElementById('pwEmpty');
-    if (!gridEl) return;
+    if (!spreadEl) return;
 
     // Update filter buttons
     var filters = document.querySelectorAll('.pw-filter');
@@ -1549,7 +1550,7 @@ class App {
 
     promise.then(function(photos) {
       if (!photos || photos.length === 0) {
-        gridEl.innerHTML = '';
+        spreadEl.innerHTML = '';
         if (emptyEl) emptyEl.classList.add('show');
         return;
       }
@@ -1557,19 +1558,51 @@ class App {
 
       var subjectMap = { math2: '数学二', cs819: '819', english2: '英语二', politics: '政治' };
 
-      gridEl.innerHTML = photos.map(function(p) {
+      // Seeded pseudo-random for consistent layout
+      var seededRandom = function(seed) {
+        var x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+      };
+
+      var count = photos.length;
+      spreadEl.innerHTML = photos.map(function(p, i) {
+        // Each photo gets random rotation (-12 to +12 deg), staggered delay
+        var seed = p.id || i;
+        var rotation = ((seededRandom(seed * 7.3) - 0.5) * 20).toFixed(1); // -10..+10
+        var delay = (i * 0.08).toFixed(2); // stagger 80ms each
+        var zIdx = 10 + i;
+        // Slight margin offsets for scatter feel
+        var mt = ((seededRandom(seed * 3.1) - 0.5) * 16).toFixed(0);
+        var ml = ((seededRandom(seed * 5.7) - 0.5) * 24).toFixed(0);
         var dateStr = p.date || '';
         var subName = subjectMap[p.subject] || p.subject;
-        return '<div class="pw-card" onclick="App.instance.openLightbox(' + p.id + ')">' +
-          '<img class="pw-card-img" src="' + p.dataUrl + '" alt="" loading="lazy">' +
-          '<div class="pw-card-meta">' +
-            '<span>' + dateStr + '</span>' +
-            '<span class="pw-card-badge">' + subName + '</span>' +
+
+        return '<div class="pw-polaroid" ' +
+          'onclick="App.instance.openLightbox(' + p.id + ')" ' +
+          'style="' +
+            '--pw-rotate:' + rotation + 'deg;' +
+            'animation-delay:' + delay + 's;' +
+            'z-index:' + zIdx + ';' +
+            'margin-top:' + mt + 'px;' +
+            'margin-left:' + ml + 'px;' +
+          '">' +
+          '<div class="pw-polaroid-frame">' +
+            '<img class="pw-polaroid-img" src="' + p.dataUrl + '" alt="" loading="lazy">' +
+            '<span class="pw-polaroid-date">' + dateStr + '</span>' +
+            '<span class="pw-polaroid-badge">' + subName + '</span>' +
           '</div>' +
         '</div>';
       }).join('');
+
+      // Trigger spring animation after DOM insertion
+      requestAnimationFrame(function() {
+        var cards = spreadEl.querySelectorAll('.pw-polaroid');
+        cards.forEach(function(card) {
+          card.classList.add('ready');
+        });
+      });
     }).catch(function() {
-      gridEl.innerHTML = '';
+      spreadEl.innerHTML = '';
       if (emptyEl) emptyEl.classList.add('show');
     });
   }
@@ -1616,7 +1649,7 @@ class App {
       if (cleaned) StorageManager.save(data);
 
       self.closeLightbox();
-      self.renderPhotoGrid(self._pwCurrentFilter || 'all');
+      self.renderPhotoSpread(self._pwCurrentFilter || 'all');
       self.showToast('照片已删除');
     }).catch(function() {
       self.showToast('删除失败');
@@ -1785,7 +1818,7 @@ class App {
     // Filter buttons
     document.querySelectorAll('.pw-filter').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        self.renderPhotoGrid(btn.dataset.filter);
+        self.renderPhotoSpread(btn.dataset.filter);
       });
     });
     // Lightbox close
