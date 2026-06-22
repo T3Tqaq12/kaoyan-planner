@@ -1520,18 +1520,81 @@ class App {
     this._pwCurrentFilter = 'all';
     this.renderPhotoGrid('all');
     document.body.style.overflow = 'hidden';
+
+    // Start image trail on the overlay
+    this._startImageTrail();
   }
 
   closePhotoWall() {
+    // Stop image trail
+    this._stopImageTrail();
+
     var overlay = document.getElementById('photowallOverlay');
     if (overlay) overlay.classList.remove('show');
     this.closeLightbox();
     document.body.style.overflow = '';
   }
 
+  _startImageTrail() {
+    var self = this;
+    var overlay = document.getElementById('photowallOverlay');
+    if (!overlay || typeof ImageTrail === 'undefined') return;
+
+    // Stop existing trail if any
+    this._stopImageTrail();
+
+    // Create trail — start with empty sources, update once photos load
+    this._imageTrail = new ImageTrail({
+      container: overlay,
+      sources: [],
+      interval: 100,
+      rotationRange: 15,
+      itemSize: 96,
+      excludeSelector: '.pw-header',
+    });
+    this._imageTrail.start();
+
+    // Load photo URLs asynchronously
+    var filterSub = this._pwCurrentFilter || 'all';
+    var promise = (filterSub === 'all')
+      ? PhotoStore.getAll()
+      : PhotoStore.getBySubject(filterSub);
+
+    promise.then(function(photos) {
+      if (!photos || photos.length === 0) return;
+      var urls = photos.map(function(p) { return p.dataUrl; });
+      if (self._imageTrail) {
+        self._imageTrail.updateSources(urls);
+      }
+    }).catch(function() {});
+  }
+
+  _stopImageTrail() {
+    if (this._imageTrail) {
+      this._imageTrail.stop();
+      this._imageTrail = null;
+    }
+  }
+
+  _updateTrailSources(filterSub) {
+    var self = this;
+    if (!this._imageTrail) return;
+    var promise = (filterSub === 'all')
+      ? PhotoStore.getAll()
+      : PhotoStore.getBySubject(filterSub);
+    promise.then(function(photos) {
+      if (!photos || !self._imageTrail) return;
+      var urls = photos.map(function(p) { return p.dataUrl; });
+      self._imageTrail.updateSources(urls);
+    }).catch(function() {});
+  }
+
   renderPhotoGrid(filterSub) {
     var self = this;
     this._pwCurrentFilter = filterSub;
+
+    // Update trail sources for new filter
+    this._updateTrailSources(filterSub);
 
     var gridEl = document.getElementById('pwGrid');
     var emptyEl = document.getElementById('pwEmpty');
