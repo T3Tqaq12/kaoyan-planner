@@ -1243,8 +1243,8 @@ class App {
     const target = document.getElementById(`page-${pageName}`);
     if (target) target.classList.add('active');
 
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    const navTarget = document.querySelector(`.nav-btn[data-page="${pageName}"]`);
+    document.querySelectorAll('.dock-item').forEach(b => b.classList.remove('active'));
+    const navTarget = document.querySelector(`.dock-item[data-page="${pageName}"]`);
     if (navTarget) navTarget.classList.add('active');
 
     // Render the target page
@@ -1656,7 +1656,7 @@ class App {
     var self = this;
 
     // Bottom nav
-    document.querySelectorAll('.nav-btn').forEach(btn => {
+    document.querySelectorAll('.dock-item').forEach(btn => {
       btn.addEventListener('click', () => this.switchPage(btn.dataset.page));
     });
 

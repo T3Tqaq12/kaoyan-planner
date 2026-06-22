@@ -374,75 +374,136 @@ h1, h2, h3, h4 {
   letter-spacing: 0.02em;
 }
 
-/* ── Bottom Navigation ────────────────────────────────── */
-.bottom-nav {
+/* ── Bottom Dock (Glass Morphism) ─────────────────────── */
+.dock-nav {
   position: fixed;
-  bottom: 0;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background: var(--bg);
-  border-top: 0.5px solid var(--border);
-  padding: 6px 0 max(6px, env(safe-area-inset-bottom));
   z-index: 200;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-.nav-btn {
+/* The pill-shaped glass container */
+.dock {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 20px;
+  background: rgba(251, 250, 247, 0.35);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* Each dock item */
+.dock-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   border: none;
-  background: none;
+  background: transparent;
   cursor: pointer;
-  padding: 8px 20px;
-  border-radius: var(--r);
-  transition: all var(--dur) var(--ease);
+  border-radius: 14px;
   color: var(--text-tertiary);
   font-family: var(--font-sans);
-  position: relative;
+  transition: color 0.2s ease;
 }
 
-.nav-btn::after {
+/* Morphic bubble — scales up behind the icon on hover */
+.dock-item::before {
   content: '';
   position: absolute;
-  bottom: 2px;
-  left: 50%;
-  transform: translateX(-50%) scaleX(0);
-  width: 16px;
-  height: 1.5px;
-  background: var(--accent);
-  transition: transform var(--dur) var(--ease);
+  inset: 2px;
+  border-radius: 14px;
+  z-index: -1;
+  background: linear-gradient(
+    135deg,
+    rgba(123, 91, 91, 0.18) 0%,
+    rgba(123, 91, 91, 0.06) 40%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  box-shadow:
+    0 1px 4px rgba(123, 91, 91, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transform: scale(0.65);
+  opacity: 0;
+  transition:
+    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.25s ease;
 }
 
-.nav-btn.active::after { transform: translateX(-50%) scaleX(1); }
+/* Bubble springs in on hover */
+.dock-item:hover::before {
+  transform: scale(1.38);
+  opacity: 1;
+}
 
-.nav-btn .nav-icon {
+/* Icon */
+.dock-icon {
   font-family: var(--font-serif);
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   font-weight: 600;
   font-style: italic;
-  transition: transform var(--dur) var(--ease);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 1;
 }
 
-.nav-btn .nav-label {
+.dock-item:hover .dock-icon {
+  transform: scale(1.15) translateY(-3px);
+}
+
+/* Tooltip label — hidden by default, fades in above on hover */
+.dock-label {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  white-space: nowrap;
   font-size: var(--text-2xs);
-  font-weight: 450;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: rgba(26, 26, 26, 0.82);
+  padding: 3px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.nav-btn.active {
+.dock-item:hover .dock-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Active state */
+.dock-item.active {
   color: var(--text);
 }
-.nav-btn.active .nav-icon {
+.dock-item.active .dock-icon {
   transform: translateY(-1px);
 }
-.nav-btn:active { transform: scale(0.97); }
+
+/* Pressed state */
+.dock-item:active {
+  transform: scale(0.92);
+}
+.dock-item:active::before {
+  transform: scale(1.15);
+  transition: transform 0.15s ease;
+}
 
 /* ── Radio Widget ─────────────────────────────────────── */
 .header-radio {
