@@ -466,13 +466,13 @@
         self.togglePanel();
       });
 
-      document.getElementById('tomatoBackdrop')?.addEventListener('click', function() {
-        self.closePanel();
+      document.getElementById('tomatoOverlay')?.addEventListener('click', function(e) {
+        if (e.target === this) self.closePanel();
       });
 
       document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-          if (document.getElementById('tomatoDropdown')?.classList.contains('open')) self.closePanel();
+          if (document.getElementById('tomatoOverlay')?.classList.contains('show')) self.closePanel();
           if (document.getElementById('historyOverlay')?.classList.contains('show')) self.closeHistory();
         }
       });
@@ -509,21 +509,18 @@
     },
 
     togglePanel: function() {
-      var panel = document.getElementById('tomatoDropdown');
-      var backdrop = document.getElementById('tomatoBackdrop');
-      if (panel?.classList.contains('open')) {
+      var overlay = document.getElementById('tomatoOverlay');
+      if (overlay?.classList.contains('show')) {
         this.closePanel();
       } else {
         this._currentSubject = (App.instance && App.instance.currentPage) ? App.instance.currentPage : 'math2';
         this.renderPanel();
-        panel?.classList.add('open');
-        backdrop?.classList.add('show');
+        overlay?.classList.add('show');
       }
     },
 
     closePanel: function() {
-      document.getElementById('tomatoDropdown')?.classList.remove('open');
-      document.getElementById('tomatoBackdrop')?.classList.remove('show');
+      document.getElementById('tomatoOverlay')?.classList.remove('show');
     },
 
     renderPanel: function() {
