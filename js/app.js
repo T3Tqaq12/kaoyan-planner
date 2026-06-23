@@ -1056,12 +1056,12 @@ class App {
         <div class="checkin-photo-actions">
           <label class="checkin-photo-btn">
             📷 拍照
-            <input type="file" accept="image/*" capture="environment"
+            <input type="file" accept="image/*" capture="environment" multiple
                    onchange="App.instance.handlePhotoCapture(this,'${subId}')" hidden>
           </label>
           <label class="checkin-photo-btn">
             🖼️ 相册
-            <input type="file" accept="image/*"
+            <input type="file" accept="image/*" multiple
                    onchange="App.instance.handlePhotoCapture(this,'${subId}')" hidden>
           </label>
         </div>
