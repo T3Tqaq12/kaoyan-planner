@@ -262,8 +262,6 @@
       if (this._state.remaining <= 0) {
         this.complete();
       } else {
-        this._state.remaining--;
-        this._state.startedAt = Date.now();
         this.saveState();
         if (this._onTick) {
           var total = this._getPhaseDuration(this._state.phase);
