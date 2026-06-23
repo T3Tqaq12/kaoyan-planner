@@ -155,6 +155,7 @@
       if (this._state.phase === 'paused') {
         this._state.phase = this._state._pausedPhase || 'focus';
         this._state.startedAt = Date.now();
+        this._state._sessionStartedAt = Date.now();
         delete this._state._pausedPhase;
       } else {
         this._state.phase = 'focus';
@@ -162,6 +163,7 @@
         this._state.date = todayStr();
         this._state.remaining = this._config.focusMin * 60;
         this._state.startedAt = Date.now();
+        this._state._sessionStartedAt = Date.now();
       }
       this.saveState();
       this._startTick();
@@ -205,11 +207,12 @@
 
       if (phase === 'focus') {
         var durationMin = this._config.focusMin;
-        var startTime = new Date(this._state.startedAt || (Date.now() - durationMin * 60000));
+        // _sessionStartedAt is the real session start, not overwritten by tick recalculations
+        var sessionStart = this._state._sessionStartedAt || this._state.startedAt || (Date.now() - durationMin * 60000);
 
         PomodoroStorage.addSession(date, {
           subject: subject,
-          startTime: timeStr(startTime),
+          startTime: timeStr(new Date(sessionStart)),
           endTime: timeStr(new Date()),
           duration: durationMin,
           type: 'focus',
@@ -219,6 +222,7 @@
         this._state.pomodoroCount++;
         this._state.remaining = null;
         this._state.startedAt = null;
+        this._state._sessionStartedAt = null;
 
         // Transition to break
         this._state.phase = 'break';
