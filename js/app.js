@@ -644,9 +644,8 @@ class PushService {
         })
       });
       if (!resp.ok) { console.warn('GitHub upload failed:', resp.status); return null; }
-      var result = await resp.json();
-      if (result.content && result.content.download_url) return result.content.download_url;
-      return 'https://raw.githubusercontent.com/T3Tqaq12/kaoyan-planner/master/photos/' + filename;
+      // Use jsDelivr CDN — more stable in China than raw.githubusercontent.com
+      return 'https://cdn.jsdelivr.net/gh/T3Tqaq12/kaoyan-planner@master/photos/' + filename;
     } catch (e) { console.warn('GitHub upload error:', e); return null; }
   }
 }
@@ -1169,6 +1168,10 @@ class App {
           var filename = today + '_' + subId + '_' + ts + '_' + (pi + 1) + '.jpg';
           var url = await PushService.uploadToGitHub(p.dataUrl, filename);
           if (url) photoUrls.push(url);
+        }
+        // Wait 2s for jsDelivr CDN to pick up the new file before pushing
+        if (photoUrls.length > 0) {
+          await new Promise(function(r) { setTimeout(r, 2000); });
         }
       }
 
