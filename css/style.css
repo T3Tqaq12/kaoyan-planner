@@ -2285,7 +2285,20 @@ h1, h2, h3, h4 {
 }
 
 @media (min-width: 768px) {
-  .app { max-width: 520px; }
-  .header { padding: 32px 28px 18px; }
-  .main-content { padding: 20px 24px 108px; }
+  .app { max-width: 600px; }
+  .header { padding: 32px 32px 18px; }
+  .main-content { padding: 20px 28px 108px; }
+  body {
+    background: radial-gradient(
+      ellipse 60% 50% at 50% 30%,
+      rgba(123, 91, 91, 0.03) 0%,
+      transparent 70%
+    ), var(--bg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .app { max-width: 680px; }
+  .header { padding: 36px 40px 20px; }
+  .main-content { padding: 24px 36px 112px; }
 }
