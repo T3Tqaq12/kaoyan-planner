@@ -847,7 +847,7 @@ class App {
         </div>
         <div class="strip-sep">|</div>
         <div class="strip-item">
-          ${hasCheckedIn ? '已打卡' : '未打卡'}
+          ${hasCheckedIn ? '已打卡' : '待打卡'}
         </div>
         <div class="strip-sep">|</div>
         <div class="strip-item">🔥 ${this.data.streak.current}天</div>
@@ -1472,6 +1472,13 @@ class App {
     today.setHours(0, 0, 0, 0);
     const diff = target.getTime() - today.getTime();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    // Urgency tonal shifts
+    el.classList.remove('urgency-warm', 'urgency-near');
+    if (days <= 7 && days > 0) {
+      el.classList.add('urgency-near');
+    } else if (days <= 30 && days > 0) {
+      el.classList.add('urgency-warm');
+    }
     if (days > 0) {
       el.textContent = '距考研 ' + days + ' 天';
     } else if (days === 0) {
