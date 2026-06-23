@@ -776,6 +776,7 @@ class App {
     this.renderAll();
     this.bindGlobalEvents();
     this.initRadio();
+    this.initPomodoro();
     this.renderDailyQuote();
     this.renderCountdown();
     this._startMidnightRefresh();
@@ -804,6 +805,11 @@ class App {
     const todayLogs = this.data.dailyLogs[today] || [];
     const hasCheckedIn = todayLogs.length > 0;
 
+    // Get pomodoro count for today
+    var pomoStats = (typeof PomodoroStorage !== 'undefined')
+      ? PomodoroStorage.getDayStats(today)
+      : { totalPomodoros: 0, totalMinutes: 0 };
+
     el.innerHTML = `
       <div class="strip-inner">
         <div class="strip-item">
@@ -816,6 +822,8 @@ class App {
         </div>
         <div class="strip-sep">|</div>
         <div class="strip-item">🔥 ${this.data.streak.current}天</div>
+        <div class="strip-sep">|</div>
+        <div class="strip-item">🍅 ${pomoStats.totalPomodoros}</div>
         <div class="strip-sep">|</div>
         <div class="strip-item">⏱️ 本周${this.getWeekHours()}h</div>
       </div>
@@ -1250,6 +1258,14 @@ class App {
     // Render the target page
     this.renderSubjectPage(pageName);
 
+    // Sync pomodoro subject
+    if (typeof PomodoroUI !== 'undefined') {
+      PomodoroUI._currentSubject = pageName;
+      if (PomodoroTimer.isRunning()) {
+        PomodoroUI.renderPanel();
+      }
+    }
+
     document.querySelector('.main-content').scrollTop = 0;
   }
 
@@ -1283,6 +1299,17 @@ class App {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.closeRadio();
     });
+  }
+
+  // ── Pomodoro Init ────────────────────────────────────────
+  initPomodoro() {
+    if (typeof PomodoroTimer === 'undefined') return;
+    PomodoroTimer.init();
+    if (typeof PomodoroUI !== 'undefined') {
+      PomodoroUI.init();
+      // Sync current subject
+      PomodoroUI._currentSubject = this.currentPage;
+    }
   }
 
   renderRadioPanel(song) {
@@ -1402,6 +1429,10 @@ class App {
         // Refresh radio song too
         var song = DailyRadio ? DailyRadio.getTodaySong() : null;
         if (song) self.renderRadioPanel(song);
+        // Trigger pomodoro data upload for yesterday
+        if (typeof PomodoroUploader !== 'undefined') {
+          PomodoroUploader.checkAndUpload();
+        }
       }
     }, 60000); // check every minute
   }

@@ -34,6 +34,20 @@
           </p>
           <h1 class="header-title">考研学习规划</h1>
         </div>
+        <!-- Tomato Timer Widget -->
+        <div class="header-tomato" id="headerTomato">
+          <button class="tomato-icon-btn" id="tomatoIconBtn" aria-label="番茄钟">
+            <span class="tomato-icon-emoji">🍅</span>
+            <span class="tomato-live-dot"></span>
+          </button>
+
+          <!-- Tomato Backdrop -->
+          <div class="radio-backdrop tomato-backdrop" id="tomatoBackdrop"></div>
+
+          <!-- Tomato Dropdown Panel -->
+          <div class="radio-dropdown tomato-dropdown" id="tomatoDropdown"></div>
+        </div>
+
         <!-- Daily Radio Widget -->
         <div class="header-radio" id="headerRadio">
           <button class="radio-icon-btn" id="radioIconBtn" aria-label="每日电台">
@@ -230,6 +244,23 @@
     </div>
   </div>
 
+  <!-- History Overlay -->
+  <div class="photowall-overlay" id="historyOverlay">
+    <div class="pw-container hist-container">
+      <div class="pw-header hist-header">
+        <span class="pw-title">📊 学习记录</span>
+        <div class="pw-filters" style="gap:4px">
+          <button class="pw-filter active" id="histModeDay">按天</button>
+          <button class="pw-filter" id="histModeMonth">按月</button>
+        </div>
+        <button class="pw-close" id="histClose">✕</button>
+      </div>
+      <div class="hist-nav" id="histNav"></div>
+      <div class="pw-spread hist-body" id="histBody"></div>
+      <div class="hist-summary" id="histSummary"></div>
+    </div>
+  </div>
+
   <!-- Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-card">
@@ -268,6 +299,7 @@
   <script src="js/songs.js"></script>
   <script src="js/quotes.js"></script>
   <script src="js/photos.js"></script>
+  <script src="js/pomodoro.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
