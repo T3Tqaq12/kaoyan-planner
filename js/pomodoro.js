@@ -570,7 +570,7 @@
       html += ' stroke-dasharray="' + RING_CIRCUMFERENCE + '" stroke-dashoffset="' + offset.toFixed(1) + '"';
       html += ' style="transform: rotate(-90deg); transform-origin: 80px 80px; ' + initTransition + '"/>';
       html += '</svg>';
-      html += '<div class="tomato-ring-time">' + timeDisplay + '</div>';
+      html += '<div class="tomato-ring-time' + (state.phase === 'paused' ? ' paused' : '') + '">' + timeDisplay + '</div>';
       html += '<div class="tomato-ring-count">🍅 ' + pomoCount + ' 个</div>';
       html += '</div>';
 
@@ -632,7 +632,7 @@
       var fillEl = document.querySelector('.tomato-ring-fill');
       var countEl = document.querySelector('.tomato-ring-count');
 
-      if (timeEl) timeEl.textContent = fmtMinSec(remaining);
+      if (timeEl) { timeEl.textContent = fmtMinSec(remaining); timeEl.classList.remove('paused'); }
       if (fillEl) {
         fillEl.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - progress);
         fillEl.style.stroke = phase === 'break' ? '#7BAA8B' : '#C2796B';
