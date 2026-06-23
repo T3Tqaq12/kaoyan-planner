@@ -506,7 +506,7 @@ h1, h2, h3, h4 {
 }
 
 /* ── Tomato Timer ─────────────────────────────────────── */
-.header-tomato { position: relative; flex-shrink: 0; }
+.header-tomato { position: relative; flex-shrink: 0; margin-right: -10px; }
 
 .tomato-icon-btn {
   width: 44px;

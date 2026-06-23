@@ -537,14 +537,16 @@
       var weekStats = PomodoroStorage.getWeekStats();
       var remaining = PomodoroTimer.getRemaining();
 
-      var phaseLabel = '';
-      if (state.phase === 'focus') phaseLabel = '专注中';
-      else if (state.phase === 'break') phaseLabel = (state.pomodoroCount > 0 && config.longBreakInterval > 0 && state.pomodoroCount % config.longBreakInterval === 0) ? '长休息' : '休息中';
-      else if (state.phase === 'paused') phaseLabel = '已暂停';
-      else phaseLabel = '准备开始';
-
-      var timeDisplay = remaining != null ? fmtMinSec(remaining) :
-        (state.phase === 'idle' ? fmtMinSec(config.focusMin * 60) : '--:--');
+      var timeDisplay;
+      if (state.phase === 'paused') {
+        timeDisplay = '时间暂停';
+      } else if (remaining != null) {
+        timeDisplay = fmtMinSec(remaining);
+      } else if (state.phase === 'idle') {
+        timeDisplay = fmtMinSec(config.focusMin * 60);
+      } else {
+        timeDisplay = '--:--';
+      }
 
       var progress = (state.phase === 'focus' || state.phase === 'break') ? PomodoroTimer.getProgress() : 0;
       var pomoCount = state.pomodoroCount;
@@ -557,7 +559,7 @@
       // Header
       html += '<div class="tomato-dd-header">';
       html += '<span class="tomato-dd-title">🍅 番茄专注</span>';
-      html += '<span class="tomato-dd-phase">' + phaseLabel + '</span>';
+      // phase label removed
       html += '</div>';
 
       // Ring
@@ -629,7 +631,6 @@
       var timeEl = document.querySelector('.tomato-ring-time');
       var fillEl = document.querySelector('.tomato-ring-fill');
       var countEl = document.querySelector('.tomato-ring-count');
-      var phaseEl = document.querySelector('.tomato-dd-phase');
 
       if (timeEl) timeEl.textContent = fmtMinSec(remaining);
       if (fillEl) {
@@ -637,9 +638,6 @@
         fillEl.style.stroke = phase === 'break' ? '#7BAA8B' : '#C2796B';
       }
       if (countEl) countEl.textContent = '🍅 ' + PomodoroTimer.getState().pomodoroCount + ' 个';
-      if (phaseEl) {
-        phaseEl.textContent = phase === 'focus' ? '专注中' : '休息中';
-      }
     },
 
     updateTitle: function(remaining, phase) {
