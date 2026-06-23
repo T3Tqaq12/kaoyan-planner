@@ -913,7 +913,30 @@
 
       var sessions = PomodoroStorage.getDaySessions(dateStr);
       var focusSessions = sessions.filter(function(s) { return s.type === 'focus'; });
-      if (focusSessions.length === 0) return Promise.resolve({ skipped: true, reason: 'no focus sessions' });
+
+      // Gather check-in records from dailyLogs
+      var checkins = [];
+      try {
+        var studyData = JSON.parse(localStorage.getItem('kaoyan_study_planner') || '{}');
+        var dayLogs = studyData.dailyLogs ? (studyData.dailyLogs[dateStr] || []) : [];
+        var subjectMap = { math2: '数学二', cs819: '819数据结构', english2: '英语二', politics: '政治' };
+        var moodMap = { easy: '轻松', normal: '一般', hard: '吃力' };
+        dayLogs.forEach(function(entry) {
+          checkins.push({
+            subject: subjectMap[entry.subject] || entry.subject,
+            duration: entry.duration || 0,
+            content: entry.content || '',
+            mood: moodMap[entry.mood] || '',
+            chapterIdx: entry.chapterIdx,
+            photoIds: entry.photoIds || [],
+            time: entry.time || ''
+          });
+        });
+      } catch(e) {}
+
+      if (focusSessions.length === 0 && checkins.length === 0) {
+        return Promise.resolve({ skipped: true, reason: 'no data' });
+      }
 
       var stats = PomodoroStorage.getDayStats(dateStr);
       var payload = {
@@ -923,6 +946,7 @@
         totalPomodoros: stats.totalPomodoros,
         bySubject: stats.bySubject,
         sessions: sessions,
+        checkins: checkins,
         uploadedAt: new Date().toISOString()
       };
 
@@ -958,8 +982,19 @@
     uploadPendingDays: function() {
       var self = this;
       var sessions = {};
+      var dailyLogs = {};
       try { sessions = JSON.parse(localStorage.getItem(STORAGE_SESSIONS) || '{}'); } catch(e) {}
-      var dates = Object.keys(sessions).filter(function(d) { return !self.isUploaded(d); });
+      try {
+        var studyData = JSON.parse(localStorage.getItem('kaoyan_study_planner') || '{}');
+        dailyLogs = studyData.dailyLogs || {};
+      } catch(e) {}
+
+      // Merge dates from both pomodoro sessions and check-in dailyLogs
+      var allDates = {};
+      Object.keys(sessions).forEach(function(d) { allDates[d] = true; });
+      Object.keys(dailyLogs).forEach(function(d) { if (dailyLogs[d].length > 0) allDates[d] = true; });
+
+      var dates = Object.keys(allDates).filter(function(d) { return !self.isUploaded(d); });
       dates.sort();
       var chain = Promise.resolve();
       dates.forEach(function(date) {
