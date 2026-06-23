@@ -1740,7 +1740,7 @@ h1, h2, h3, h4 {
   transition: opacity var(--dur-slow) var(--ease);
 }
 
-.breathing-overlay.active {
+.breathing-overlay.show {
   opacity: 1;
   pointer-events: auto;
 }

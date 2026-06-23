@@ -1047,8 +1047,43 @@ class App {
       globalOffset += phase.chapters.length;
     });
 
-    const incompleteOpts = chapterOptions.filter(c => !c.done);
-    const doneOpts = chapterOptions.filter(c => c.done);
+    // Find first incomplete for smart default
+    const firstIncomplete = chapterOptions.find(c => !c.done);
+    const defaultIdx = firstIncomplete ? firstIncomplete.idx : '';
+
+    // Build phase groups for optgroup rendering
+    const phaseGroups = [];
+    let offset = 0;
+    sub.phases.forEach(phase => {
+      const opts = phase.chapters.map((ch, ci) => {
+        const gIdx = offset + ci;
+        return {
+          idx: gIdx,
+          name: this.getChapterName(ch),
+          done: completed.includes(gIdx)
+        };
+      });
+      phaseGroups.push({ name: phase.name, opts });
+      offset += phase.chapters.length;
+    });
+
+    // Build chapter select HTML with optgroups
+    var chapterSelectHTML = '<select id="chapter-' + subId + '">';
+    if (defaultIdx === '') {
+      chapterSelectHTML += '<option value="" selected>— 选择章节（可选）—</option>';
+    } else {
+      chapterSelectHTML += '<option value="">— 选择章节（可选）—</option>';
+    }
+    phaseGroups.forEach(function(group) {
+      chapterSelectHTML += '<optgroup label="' + group.name + '">';
+      group.opts.forEach(function(c) {
+        var sel = c.idx === defaultIdx ? ' selected' : '';
+        var mark = c.done ? ' ✅' : '';
+        chapterSelectHTML += '<option value="' + c.idx + '"' + sel + '>' + c.name + mark + '</option>';
+      });
+      chapterSelectHTML += '</optgroup>';
+    });
+    chapterSelectHTML += '</select>';
 
     el.innerHTML = `
       <h2 class="card-title">今日${sub.name}打卡</h2>
@@ -1068,11 +1103,7 @@ class App {
       </div>
       <div class="form-group">
         <label>对应章节</label>
-        <select id="chapter-${subId}">
-          <option value="">— 选择章节（可选）—</option>
-          ${incompleteOpts.map(c => `<option value="${c.idx}">${c.phase} › ${c.name}</option>`).join('')}
-          ${doneOpts.map(c => `<option value="${c.idx}">✅ ${c.phase} › ${c.name}</option>`).join('')}
-        </select>
+        ${chapterSelectHTML}
       </div>
       <div class="form-group">
         <label>😊 学习感受</label>
@@ -1239,9 +1270,17 @@ class App {
         self.showToast('已撤销打卡 ↩');
       });
 
-      self.showBreathing().then(function() {
+      // Only trigger breathing on first checkin of the day
+      var breathingKey = 'kaoyan_breathing_last_date';
+      var todayStr = App.todayStr();
+      if (localStorage.getItem(breathingKey) !== todayStr) {
+        self.showBreathing().then(function() {
+          localStorage.setItem(breathingKey, todayStr);
+          self.showCelebration();
+        });
+      } else {
         self.showCelebration();
-      });
+      }
     }
 
     // Store photos then save
@@ -1527,7 +1566,7 @@ class App {
         if (resolved) return;
         resolved = true;
         timers.forEach(clearTimeout);
-        overlay.classList.remove('active');
+        overlay.classList.remove('show');
         circle.classList.remove('inhale', 'hold', 'exhale');
         resolve();
       }
@@ -1540,7 +1579,7 @@ class App {
       }
 
       // Phase 1: inhale 4s
-      overlay.classList.add('active');
+      overlay.classList.add('show');
       circle.classList.add('inhale');
       label.textContent = '吸气…';
       timers.push(setTimeout(function() {
