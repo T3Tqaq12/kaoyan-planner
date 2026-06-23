@@ -514,6 +514,11 @@
         this._currentSubject = (App.instance && App.instance.currentPage) ? App.instance.currentPage : 'math2';
         this.renderPanel();
         overlay?.classList.add('show');
+        // First-tap tooltip — explain what the timer does
+        if (!localStorage.getItem('kaoyan_pomodoro_seen_tip')) {
+          localStorage.setItem('kaoyan_pomodoro_seen_tip', '1');
+          if (App.instance) App.instance.showToast('🍅 25分钟专注 + 5分钟休息');
+        }
       }
     },
 

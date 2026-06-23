@@ -729,9 +729,18 @@ class App {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const ys = this.dateToStr(yesterday);
+      const dayBefore = new Date(yesterday);
+      dayBefore.setDate(dayBefore.getDate() - 1);
+      const dbs = this.dateToStr(dayBefore);
+
       if (last === ys) {
+        // Consecutive day — increment
         this.data.streak.current += 1;
+      } else if (last === dbs) {
+        // Missed exactly one day — gentle decay: halve the streak
+        this.data.streak.current = Math.max(1, Math.floor(this.data.streak.current / 2));
       } else {
+        // 2+ days missed — reset
         this.data.streak.current = 1;
       }
       this.data.streak.lastDate = today;
@@ -786,6 +795,7 @@ class App {
   renderAll() {
     this.renderHeaderStrip();
     this.renderStreakBadge();
+    this._renderWelcomeIfNew();
     this.renderSubjectPage('math2');
     if (this.currentPage !== 'math2') this.renderSubjectPage(this.currentPage);
     this.renderDailyQuote();
@@ -794,7 +804,27 @@ class App {
 
   renderStreakBadge() {
     const el = document.getElementById('streakBadge');
-    if (el) el.textContent = `🔥 ${this.data.streak.current}天`;
+    if (!el) return;
+    if (this.data.streak.current === 0 && Object.keys(this.data.dailyLogs).length === 0) {
+      el.textContent = '从今天开始 ✨';
+    } else {
+      el.textContent = '🔥 ' + this.data.streak.current + '天';
+    }
+  }
+
+  _renderWelcomeIfNew() {
+    if (Object.keys(this.data.dailyLogs).length > 0) return;
+    var existing = document.getElementById('welcomeCard');
+    if (existing) return;
+    var main = document.querySelector('.main-content');
+    if (!main) return;
+    var card = document.createElement('div');
+    card.id = 'welcomeCard';
+    card.className = 'card';
+    card.style.cssText = 'text-align:center;padding:20px 18px;margin-bottom:12px;border:1px dashed var(--border-strong);background:var(--accent-wash);';
+    card.innerHTML = '<p style="font-family:var(--font-serif);font-size:var(--text-md);font-weight:550;margin-bottom:8px">你好嘉敏 👋</p>' +
+      '<p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6">从底部选择一个科目<br>开始今天的打卡吧</p>';
+    main.insertBefore(card, main.firstChild);
   }
 
   renderHeaderStrip() {
@@ -1119,6 +1149,13 @@ class App {
       return;
     }
 
+    // Double-submit guard — disable the CTA button immediately
+    var checkinBtn = document.querySelector('#page-' + subId + ' .btn-glow');
+    if (checkinBtn) { checkinBtn.disabled = true; checkinBtn.textContent = '保存中…'; }
+
+    // Snapshot current data for undo path
+    var prevData = JSON.parse(JSON.stringify(self.data));
+
     // Store pending photos first (async)
     var pendingPhotos = this._pendingPhotos.filter(function(p) { return p.subject === subId; });
     this._pendingPhotos = this._pendingPhotos.filter(function(p) { return p.subject !== subId; });
@@ -1175,9 +1212,33 @@ class App {
         }
       }
 
-      PushService.send(entry, sub.name, chapterName, photoIds.length, photoUrls).catch(function(e) { console.log('推送异常:', e); });
+      // Push with failure feedback
+      PushService.send(entry, sub.name, chapterName, photoIds.length, photoUrls).then(function(result) {
+        if (!result.ok && PushService.isConfigured()) {
+          self.showToast('📤 推送未成功，可在设置中重试');
+        }
+      }).catch(function(e) {
+        if (PushService.isConfigured()) { self.showToast('📤 推送未成功，可在设置中重试'); }
+        console.log('推送异常:', e);
+      });
+
+      // Re-enable button after save completes
+      if (checkinBtn) { checkinBtn.disabled = false; checkinBtn.textContent = '✨ ' + sub.name + '打卡'; }
 
       self.renderAll();
+
+      // Undo toast — 5-second window to roll back the last checkin
+      self._showUndoToast(function performUndo() {
+        self.data = prevData;
+        StorageManager.save(self.data);
+        // Clean up just-uploaded photos from IndexedDB
+        if (photoIds.length > 0) {
+          photoIds.forEach(function(id) { PhotoStore.delete(id).catch(function() {}); });
+        }
+        self.renderAll();
+        self.showToast('已撤销打卡 ↩');
+      });
+
       self.showBreathing().then(function() {
         self.showCelebration();
       });
@@ -1312,6 +1373,8 @@ class App {
       PomodoroUI.init();
       // Sync current subject
       PomodoroUI._currentSubject = this.currentPage;
+      // Restore glow if timer was running before page refresh
+      PomodoroUI.updateIconGlow();
     }
   }
 
@@ -1707,15 +1770,93 @@ class App {
       toast.style.cssText = `
         position:fixed;top:20px;left:50%;transform:translateX(-50%);
         background:var(--text);color:#FFF;padding:10px 22px;border-radius:20px;
-        font-size:0.85rem;z-index:1000;font-family:var(--font);font-weight:600;
+        font-size:0.85rem;z-index:1000;font-family:var(--font-sans);font-weight:600;
         transition:opacity 0.3s ease;opacity:0;pointer-events:none;box-shadow:var(--shadow-lg);
       `;
       document.body.appendChild(toast);
     }
     toast.textContent = msg;
     toast.style.opacity = '1';
+    toast.style.pointerEvents = 'none';
     clearTimeout(this._toastTimer);
     this._toastTimer = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+  }
+
+  _showUndoToast(onUndo) {
+    var self = this;
+    var toast = document.getElementById('toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toast';
+      toast.style.cssText = `
+        position:fixed;top:20px;left:50%;transform:translateX(-50%);
+        background:var(--text);color:#FFF;padding:10px 22px;border-radius:20px;
+        font-size:0.85rem;z-index:1000;font-family:var(--font-sans);font-weight:600;
+        transition:opacity 0.3s ease;opacity:0;pointer-events:auto;box-shadow:var(--shadow-lg);
+      `;
+      document.body.appendChild(toast);
+    }
+    toast.style.pointerEvents = 'auto';
+    toast.innerHTML = '<span>已打卡 ✅</span><button id="undoBtn" style="margin-left:12px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:#FFF;font-weight:600;cursor:pointer;padding:2px 10px;border-radius:10px;font-size:0.8rem;font-family:var(--font-sans)">撤销</button>';
+    toast.style.opacity = '1';
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(function() { toast.style.opacity = '0'; toast.style.pointerEvents = 'none'; }, 5000);
+    // Bind undo — remove old handler first
+    var undoBtn = document.getElementById('undoBtn');
+    if (undoBtn) {
+      undoBtn.onclick = function(e) {
+        e.stopPropagation();
+        clearTimeout(self._toastTimer);
+        toast.style.opacity = '0';
+        toast.style.pointerEvents = 'none';
+        onUndo();
+      };
+    }
+  }
+
+  _showImportConfirm(msg, onMerge, onOverwrite) {
+    var self = this;
+    var toast = document.getElementById('toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toast';
+      toast.style.cssText = `
+        position:fixed;top:20px;left:50%;transform:translateX(-50%);
+        background:var(--text);color:#FFF;padding:12px 22px;border-radius:16px;
+        font-size:0.82rem;z-index:1000;font-family:var(--font-sans);font-weight:500;
+        transition:opacity 0.3s ease;opacity:0;pointer-events:auto;
+        box-shadow:var(--shadow-lg);text-align:center;max-width:340px;
+        line-height:1.5;
+      `;
+      document.body.appendChild(toast);
+    }
+    toast.style.pointerEvents = 'auto';
+    toast.style.maxWidth = '340px';
+    toast.style.textAlign = 'center';
+    toast.style.lineHeight = '1.5';
+    toast.innerHTML = '<div style="margin-bottom:8px;white-space:pre-line">' + msg + '</div>' +
+      '<button id="importMergeBtn" style="margin:4px;background:var(--accent);border:none;color:#FFF;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:10px;font-size:0.78rem;font-family:var(--font-sans)">合并</button>' +
+      '<button id="importOverwriteBtn" style="margin:4px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#FFF;font-weight:500;cursor:pointer;padding:6px 14px;border-radius:10px;font-size:0.78rem;font-family:var(--font-sans)">覆盖</button>' +
+      '<button id="importCancelBtn" style="margin:4px;background:transparent;border:none;color:rgba(255,255,255,0.6);font-weight:400;cursor:pointer;padding:6px 10px;border-radius:10px;font-size:0.78rem;font-family:var(--font-sans)">取消</button>';
+    toast.style.opacity = '1';
+    // Bind buttons
+    var mergeBtn = document.getElementById('importMergeBtn');
+    var overwriteBtn = document.getElementById('importOverwriteBtn');
+    var cancelBtn = document.getElementById('importCancelBtn');
+    function dismiss() {
+      toast.style.opacity = '0';
+      toast.style.pointerEvents = 'none';
+      toast.style.maxWidth = '';
+      toast.style.textAlign = '';
+      toast.style.lineHeight = '';
+      toast.textContent = '';
+    }
+    if (mergeBtn) mergeBtn.onclick = function() { dismiss(); onMerge(); };
+    if (overwriteBtn) overwriteBtn.onclick = function() { dismiss(); onOverwrite(); };
+    if (cancelBtn) cancelBtn.onclick = function() { dismiss(); };
+    // Auto-dismiss after 15s
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(dismiss, 15000);
   }
 
   // ── Global Events ────────────────────────────────────────
@@ -1739,15 +1880,60 @@ class App {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (ev) => {
-        const ok = StorageManager.importData(ev.target.result);
-        if (ok) {
-          this.data = StorageManager.load();
-          this.updateStreak();
-          this.renderAll();
-          this.showToast('数据导入成功 ✅');
-        } else {
-          this.showToast('数据格式不正确 ❌');
-        }
+        var raw = ev.target.result;
+        var parsed;
+        try { parsed = JSON.parse(raw); } catch (err) { this.showToast('数据格式不正确 ❌'); fileInput.value = ''; return; }
+        if (!parsed.dailyLogs) { this.showToast('数据格式不正确 ❌'); fileInput.value = ''; return; }
+
+        // Count days and entries for preview
+        var dayCount = Object.keys(parsed.dailyLogs).length;
+        var entryCount = 0;
+        Object.values(parsed.dailyLogs).forEach(function(arr) { entryCount += arr.length; });
+        var currentDays = Object.keys(self.data.dailyLogs).length;
+
+        // Auto-backup current data before any import
+        try {
+          localStorage.setItem('kaoyan_study_planner_backup', JSON.stringify(self.data));
+        } catch(e) {}
+
+        // Show confirmation
+        self._showImportConfirm(
+          '检测到 ' + dayCount + ' 天 ' + entryCount + ' 条打卡记录。\n当前已有 ' + currentDays + ' 天记录。',
+          function() {
+            // Merge: keep existing entries, add new ones
+            var merged = JSON.parse(JSON.stringify(self.data));
+            Object.keys(parsed.dailyLogs).forEach(function(date) {
+              if (!merged.dailyLogs[date]) merged.dailyLogs[date] = [];
+              (parsed.dailyLogs[date] || []).forEach(function(entry) {
+                var exists = merged.dailyLogs[date].some(function(e) {
+                  return e.subject === entry.subject && e.time === entry.time;
+                });
+                if (!exists) merged.dailyLogs[date].push(entry);
+              });
+            });
+            if (parsed.completedChapters) {
+              Object.keys(parsed.completedChapters).forEach(function(subId) {
+                if (!merged.completedChapters[subId]) merged.completedChapters[subId] = [];
+                (parsed.completedChapters[subId] || []).forEach(function(idx) {
+                  if (!merged.completedChapters[subId].includes(idx)) merged.completedChapters[subId].push(idx);
+                });
+              });
+            }
+            StorageManager.save(merged);
+            self.data = StorageManager.load();
+            self.updateStreak();
+            self.renderAll();
+            self.showToast('数据已合并 ✅');
+          },
+          function() {
+            // Overwrite
+            StorageManager.save(parsed);
+            self.data = StorageManager.load();
+            self.updateStreak();
+            self.renderAll();
+            self.showToast('数据已导入 ✅');
+          }
+        );
       };
       reader.readAsText(file);
       fileInput.value = '';
