@@ -12,8 +12,8 @@
   --card-alt:      #F9F7F3;
   --text:          #1A1A1A;
   --text-secondary:#5C5C5C;
-  --text-tertiary: #949494;
-  --text-muted:    #B8B8B8;
+  --text-tertiary: #737373;
+  --text-muted:    #7A7A7A;
   --border:        rgba(0,0,0,0.06);
   --border-strong: rgba(0,0,0,0.10);
   --accent:        #7B5B5B;   /* muted rosewood — warmth without color */
@@ -419,21 +419,16 @@ h1, h2, h3, h4 {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* The pill-shaped glass container */
+/* Solid card dock — consistent with paper metaphor */
 .dock {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 6px 8px;
   border-radius: 20px;
-  background: rgba(251, 250, 247, 0.35);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.04),
-    0 8px 32px rgba(0, 0, 0, 0.06),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Each dock item */
@@ -460,15 +455,8 @@ h1, h2, h3, h4 {
   inset: 2px;
   border-radius: 14px;
   z-index: -1;
-  background: linear-gradient(
-    135deg,
-    rgba(123, 91, 91, 0.18) 0%,
-    rgba(123, 91, 91, 0.06) 40%,
-    rgba(255, 255, 255, 0.4) 100%
-  );
-  box-shadow:
-    0 1px 4px rgba(123, 91, 91, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  background: var(--accent-wash);
+  box-shadow: 0 1px 4px rgba(123, 91, 91, 0.08);
   transform: scale(0.65);
   opacity: 0;
   transition:
@@ -988,9 +976,7 @@ h1, h2, h3, h4 {
   justify-content: center;
   gap: 16px;
   padding: 12px 20px;
-  background: rgba(255,255,255,0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--card);
   border-bottom: 0.5px solid var(--border);
   flex-shrink: 0;
 }
@@ -1166,9 +1152,7 @@ h1, h2, h3, h4 {
   font-size: var(--text-xs);
   color: var(--text-tertiary);
   border-top: 0.5px solid var(--border);
-  background: rgba(255,255,255,0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--card);
   flex-shrink: 0;
 }
 
@@ -1176,6 +1160,41 @@ h1, h2, h3, h4 {
   font-family: var(--font-serif);
   color: var(--accent);
   font-weight: 600;
+}
+
+/* ── Global Focus Ring ────────────────────────────────── */
+.dock-item:focus-visible,
+.tomato-icon-btn:focus-visible,
+.radio-icon-btn:focus-visible,
+.mood-btn:focus-visible,
+.tomato-subject-btn:focus-visible,
+.pw-filter:focus-visible,
+.pw-close:focus-visible,
+.modal-close:focus-visible,
+.breathing-skip:focus-visible,
+.hist-nav button:focus-visible,
+.checkin-photo-btn:focus-visible,
+.checkin-photo-remove:focus-visible,
+.duration-input button:focus-visible,
+.pw-lb-close:focus-visible,
+.pw-lb-delete:focus-visible,
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-ghost:focus-visible,
+.btn-glow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-wash), 0 0 0 3.5px var(--accent);
+}
+
+.dock-item:focus-visible {
+  color: var(--text);
+  background: var(--accent-wash);
+}
+
+.pw-lb-close:focus-visible,
+.pw-lb-delete:focus-visible,
+.breathing-skip:focus-visible {
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
 }
 
 /* ── Buttons ──────────────────────────────────────────── */
@@ -1293,6 +1312,46 @@ h1, h2, h3, h4 {
   margin-bottom: 16px;
   font-weight: 400;
   letter-spacing: 0.03em;
+}
+
+/* Reuse yesterday button */
+.checkin-reuse {
+  margin-bottom: 14px;
+}
+
+.checkin-reuse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  font-weight: 450;
+  color: var(--accent);
+  background: var(--accent-wash);
+  border: 0.5px solid var(--accent);
+  border-radius: 100px;
+  padding: 5px 14px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.checkin-reuse-btn:hover {
+  background: var(--accent);
+  color: #FFF;
+}
+
+.checkin-reuse-btn.is-empty {
+  color: var(--text-muted);
+  background: transparent;
+  border-color: var(--border);
+  cursor: default;
+  opacity: 0.55;
+}
+
+.checkin-reuse-btn.is-empty:hover {
+  background: transparent;
+  color: var(--text-muted);
 }
 
 .form-group { margin-bottom: 12px; }
@@ -1532,10 +1591,50 @@ h1, h2, h3, h4 {
   padding: 16px 18px;
 }
 
+/* ── Plan Collapse Toggle ──────────────────────────── */
+.plan-collapse-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  border-radius: var(--r);
+  cursor: pointer;
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  font-weight: 450;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  transition: all var(--dur) var(--ease);
+}
+
+.plan-collapse-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.plan-collapse-toggle .toggle-arrow {
+  font-size: 0.5rem;
+  transition: transform var(--dur) var(--ease);
+}
+
+.plan-collapse-toggle.open .toggle-arrow {
+  transform: rotate(180deg);
+}
+
+.plan-collapse-body { display: none; }
+.plan-collapse-body.open { display: block; }
+
 .subject-phase-card.phase-done { opacity: 0.45; }
 
 .subject-phase-card.phase-active {
-  border-left: 2px solid var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0.5px var(--accent), var(--shadow-xs);
 }
 
 .phase-header {
@@ -1716,7 +1815,7 @@ h1, h2, h3, h4 {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 300;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-slow) var(--ease);
@@ -1763,7 +1862,7 @@ h1, h2, h3, h4 {
 .breathing-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 400;
   background: rgba(26,26,26,0.9);
   display: flex;
   align-items: center;
@@ -1834,7 +1933,7 @@ h1, h2, h3, h4 {
   right: 24px;
   background: none;
   border: none;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.55);
   font-size: var(--text-xs);
   cursor: pointer;
   font-family: var(--font-sans);
@@ -1842,7 +1941,7 @@ h1, h2, h3, h4 {
   letter-spacing: 0.04em;
 }
 
-.breathing-skip:hover { color: rgba(255,255,255,0.7); }
+.breathing-skip:hover { color: rgba(255,255,255,0.85); }
 
 /* ── Photo Wall ───────────────────────────────────────── */
 .photowall-overlay {
@@ -1870,17 +1969,16 @@ h1, h2, h3, h4 {
 .pw-container {
   width: 100%;
   max-width: 700px;
-  background: rgba(247, 245, 241, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--card);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border-radius: 16px;
   margin: 20px;
+  border: 0.5px solid var(--border);
   transform: translateY(12px);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 12px 48px rgba(0,0,0,0.12);
+  box-shadow: var(--shadow-lg);
 }
 
 .photowall-overlay.show .pw-container {
@@ -1892,9 +1990,7 @@ h1, h2, h3, h4 {
   align-items: center;
   gap: 10px;
   padding: 16px 20px 12px;
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--card);
   border-bottom: 0.5px solid var(--border);
   flex-shrink: 0;
   flex-wrap: wrap;

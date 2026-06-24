@@ -1018,7 +1018,65 @@ class App {
       }
     }
 
-    el.innerHTML = html;
+    // Wrap in collapsible container — plan is reference, not daily action
+    var planTotal = 0;
+    sub.phases.forEach(function(phase) { planTotal += phase.chapters.length; });
+    var planDone = 0;
+    completed.forEach(function(idx) { if (idx < planTotal) planDone++; });
+
+    el.innerHTML =
+      '<button class="plan-collapse-toggle" id="planToggle-' + subId + '" onclick="App.instance.togglePlan(\'' + subId + '\')">' +
+        '<span>📋 ' + sub.name + '完整计划 · ' + planDone + '/' + planTotal + '章</span>' +
+        '<span class="toggle-arrow">▾</span>' +
+      '</button>' +
+      '<div class="plan-collapse-body" id="planBody-' + subId + '">' +
+        html +
+      '</div>';
+  }
+
+  togglePlan(subId) {
+    var body = document.getElementById('planBody-' + subId);
+    var toggle = document.getElementById('planToggle-' + subId);
+    if (!body || !toggle) return;
+    var isOpen = body.classList.contains('open');
+    if (isOpen) {
+      body.classList.remove('open');
+      toggle.classList.remove('open');
+    } else {
+      body.classList.add('open');
+      toggle.classList.add('open');
+    }
+  }
+
+  // ── Reuse Yesterday ──────────────────────────────────────
+  reuseYesterday(subId) {
+    var yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    var ys = this.dateToStr(yesterday);
+    var yesterdayEntries = (this.data.dailyLogs[ys] || []).filter(function(e) { return e.subject === subId; });
+    if (yesterdayEntries.length === 0) return;
+
+    var ye = yesterdayEntries[yesterdayEntries.length - 1];
+
+    var durInput = document.getElementById('dur-' + subId);
+    if (durInput) durInput.value = ye.duration || 2;
+
+    var contentInput = document.getElementById('content-' + subId);
+    if (contentInput) contentInput.value = ye.content || '';
+
+    var moodEl = document.getElementById('mood-' + subId);
+    if (moodEl) {
+      moodEl.querySelectorAll('.mood-btn').forEach(function(b) {
+        b.classList.toggle('selected', b.dataset.mood === (ye.mood || 'easy'));
+      });
+    }
+
+    if (ye.chapterIdx != null) {
+      var chSelect = document.getElementById('chapter-' + subId);
+      if (chSelect) chSelect.value = ye.chapterIdx;
+    }
+
+    this.showToast('已填入昨日数据 📋');
   }
 
   // ── Check-in (single subject) ────────────────────────────
@@ -1085,9 +1143,36 @@ class App {
     });
     chapterSelectHTML += '</select>';
 
+    // ── Reuse yesterday button ─────────────────────────────────
+    var yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    var ys = this.dateToStr(yesterday);
+    var yesterdayEntry = null;
+    var yesterdayLogs = this.data.dailyLogs[ys] || [];
+    for (var yi = yesterdayLogs.length - 1; yi >= 0; yi--) {
+      if (yesterdayLogs[yi].subject === subId) { yesterdayEntry = yesterdayLogs[yi]; break; }
+    }
+    var reuseHTML = '';
+    if (yesterdayEntry) {
+      var moodMap = { easy: '😊', normal: '😐', hard: '😣' };
+      var moodEmoji = moodMap[yesterdayEntry.mood] || '😊';
+      reuseHTML = '<div class="checkin-reuse">' +
+        '<button class="checkin-reuse-btn" type="button" onclick="App.instance.reuseYesterday(\'' + subId + '\')">' +
+        '🔄 复用昨日 ' + (yesterdayEntry.duration || 0) + 'h ' + moodEmoji +
+        '</button></div>';
+    } else {
+      // Always show the button — disabled state when no yesterday data
+      var dateStr = (yesterday.getMonth() + 1) + '月' + yesterday.getDate() + '日';
+      reuseHTML = '<div class="checkin-reuse">' +
+        '<button class="checkin-reuse-btn is-empty" type="button" disabled>' +
+        '🔄 ' + dateStr + ' 无记录' +
+        '</button></div>';
+    }
+
     el.innerHTML = `
       <h2 class="card-title">今日${sub.name}打卡</h2>
       <div class="checkin-date">📅 ${today} 星期${App.dayOfWeek(today)}</div>
+      ${reuseHTML}
       <div class="form-group">
         <label>⏱️ 学习时长</label>
         <div class="duration-input">
@@ -1804,7 +1889,7 @@ class App {
     const el = document.getElementById('celebration');
     if (!el) return;
     el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 2000);
+    setTimeout(() => el.classList.remove('show'), 3000);
   }
 
   // ── Toast ────────────────────────────────────────────────
