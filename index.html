@@ -34,9 +34,12 @@
           </p>
           <h1 class="header-title">考研学习规划</h1>
         </div>
-        <div class="header-avatar-wrap">
+        <div class="header-avatar-wrap" id="avatarWrap">
           <div class="header-avatar-ring"></div>
           <img class="header-avatar" src="photos/avatar_full.png" alt="" width="106" height="160">
+          <!-- Avatar Card Dropdown -->
+          <div class="avatar-card-backdrop" id="avatarCardBackdrop"></div>
+          <div class="avatar-card" id="avatarCard"></div>
         </div>
         <!-- Header Icons Group -->
         <div class="header-icons">
@@ -96,25 +99,27 @@
         </div><!-- .header-icons -->
       </div>
       <div class="header-badges">
-        <span class="badge-badge-group">
-          <span class="badge badge-school">西安工业大学</span>
-          <span class="badge badge-streak" id="streakBadge">0 天</span>
-        </span>
+        <span class="badge badge-streak" id="streakBadge">0 天</span>
         <span class="badge badge-countdown" id="countdownBadge">距考研 -- 天</span>
       </div>
-      <!-- Overview strip -->
-      <div class="header-strip" id="headerStrip"></div>
-      <div class="daily-quote" id="dailyQuote"></div>
-      <div class="data-actions">
-        <button class="btn btn-ghost btn-xs" id="btnExport" title="导出数据">📤</button>
-        <button class="btn btn-ghost btn-xs" id="btnImport" title="导入数据">📥</button>
-        <button class="btn btn-ghost btn-xs" id="btnPhotoWall" title="照片墙">🖼️</button>
-        <button class="btn btn-ghost btn-xs" id="btnSettings" title="设置">⚙️</button>
+      <!-- Overview strip — collapsed by default -->
+      <div id="headerStripWrap">
+        <button class="strip-toggle-btn" id="stripToggleBtn">
+          <span>📅 今日详情</span><span class="arrow">▾</span>
+        </button>
+        <div class="header-strip" id="headerStrip" style="display:none"></div>
+        <div class="data-actions">
+          <button class="btn btn-ghost btn-xs" id="btnExport" title="导出数据">📤</button>
+          <button class="btn btn-ghost btn-xs" id="btnImport" title="导入数据">📥</button>
+          <button class="btn btn-ghost btn-xs" id="btnPhotoWall" title="照片墙">🖼️</button>
+          <button class="btn btn-ghost btn-xs" id="btnSettings" title="设置">⚙️</button>
+        </div>
       </div>
     </header>
 
     <!-- ========== Main Content ========== -->
     <main class="main-content">
+      <div class="daily-quote" id="dailyQuote"></div>
 
       <!-- ▸ 数学二 -->
       <section class="page active" id="page-math2">
@@ -125,10 +130,10 @@
             <span class="subject-head-meta">张宇《基础30讲》2027版 · 目标 100+</span>
           </div>
         </div>
-        <div id="math2-progress" class="card card-progress"></div>
-        <div id="math2-plan"></div>
         <div id="math2-checkin" class="card card-checkin"></div>
         <div id="math2-today-log" class="card card-today-log"></div>
+        <div id="math2-progress" class="card card-progress"></div>
+        <div id="math2-plan"></div>
       </section>
 
       <!-- ▸ 819数据结构 -->
@@ -140,10 +145,10 @@
             <span class="subject-head-meta">王道《数据结构》考研复习指导 · 目标120分+</span>
           </div>
         </div>
-        <div id="cs819-progress" class="card card-progress"></div>
-        <div id="cs819-plan"></div>
         <div id="cs819-checkin" class="card card-checkin"></div>
         <div id="cs819-today-log" class="card card-today-log"></div>
+        <div id="cs819-progress" class="card card-progress"></div>
+        <div id="cs819-plan"></div>
       </section>
 
       <!-- ▸ 英语二 -->
@@ -155,10 +160,10 @@
             <span class="subject-head-meta">每日背词不间断 · 2014-2024阅读44篇精翻 · 目标75+</span>
           </div>
         </div>
-        <div id="english2-progress" class="card card-progress"></div>
-        <div id="english2-plan"></div>
         <div id="english2-checkin" class="card card-checkin"></div>
         <div id="english2-today-log" class="card card-today-log"></div>
+        <div id="english2-progress" class="card card-progress"></div>
+        <div id="english2-plan"></div>
       </section>
 
       <!-- ▸ 政治 -->
@@ -170,10 +175,10 @@
             <span class="subject-head-meta">8月启动 · 徐涛强化课+肖1000+肖4肖8 · 目标70+</span>
           </div>
         </div>
-        <div id="politics-progress" class="card card-progress"></div>
-        <div id="politics-plan"></div>
         <div id="politics-checkin" class="card card-checkin"></div>
         <div id="politics-today-log" class="card card-today-log"></div>
+        <div id="politics-progress" class="card card-progress"></div>
+        <div id="politics-plan"></div>
       </section>
 
     </main>

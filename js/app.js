@@ -1048,6 +1048,80 @@ class App {
     }
   }
 
+  // ── Avatar Card (personal dashboard) ─────────────────────
+  toggleAvatarCard() {
+    var card = document.getElementById('avatarCard');
+    var backdrop = document.getElementById('avatarCardBackdrop');
+    if (!card || !backdrop) return;
+    var isOpen = card.classList.contains('show');
+    if (isOpen) {
+      this.closeAvatarCard();
+    } else {
+      this.renderAvatarCard();
+      card.classList.add('show');
+      backdrop.classList.add('show');
+    }
+  }
+
+  closeAvatarCard() {
+    var card = document.getElementById('avatarCard');
+    var backdrop = document.getElementById('avatarCardBackdrop');
+    if (card) card.classList.remove('show');
+    if (backdrop) backdrop.classList.remove('show');
+  }
+
+  renderAvatarCard() {
+    var card = document.getElementById('avatarCard');
+    if (!card) return;
+
+    var streak = this.data.streak.current || 0;
+    var longest = this.data.streak.longest || 0;
+    var weekH = this.getWeekHours();
+    var countdown = this._getCountdownDays();
+
+    var subs = ['math2', 'cs819', 'english2', 'politics'];
+    var subIcons = { math2: '📐', cs819: '💻', english2: '📖', politics: '📰' };
+    var subNames = { math2: '数学', cs819: '819', english2: '英语', politics: '政治' };
+    var subRows = '';
+    var self = this;
+    subs.forEach(function(sid) {
+      var p = self.getSubjectProgress(sid);
+      subRows +=
+        '<div class="avatar-card-sub-row">' +
+          '<span class="avatar-card-sub-icon">' + subIcons[sid] + '</span>' +
+          '<span class="avatar-card-sub-name">' + subNames[sid] + '</span>' +
+          '<span class="avatar-card-sub-bar"><span class="avatar-card-sub-fill" style="width:' + p.pct + '%"></span></span>' +
+          '<span class="avatar-card-sub-pct">' + p.pct + '%</span>' +
+        '</div>';
+    });
+
+    var quoteHTML = '';
+    if (typeof DailyQuote !== 'undefined' && DailyQuote.QUOTES) {
+      var q = DailyQuote.getTodayQuote();
+      if (q) quoteHTML = '<div class="avatar-card-quote">&ldquo;' + q.text + '&rdquo;</div>';
+    }
+
+    card.innerHTML =
+      '<div class="avatar-card-greeting">虾米 ♥</div>' +
+      '<div class="avatar-card-stats">' +
+        '<div class="avatar-card-stat"><div class="avatar-card-stat-val">🔥 ' + streak + '天</div><div class="avatar-card-stat-label">连续打卡 · 最长' + longest + '天</div></div>' +
+        '<div class="avatar-card-stat"><div class="avatar-card-stat-val">⏱️ ' + weekH + 'h</div><div class="avatar-card-stat-label">本周学时 · 距考研' + countdown + '天</div></div>' +
+      '</div>' +
+      '<div class="avatar-card-subs">' + subRows + '</div>' +
+      quoteHTML +
+      '<div class="avatar-card-actions">' +
+        '<button class="btn btn-ghost" onclick="App.instance.openHistory();App.instance.closeAvatarCard()">📊 学习记录</button>' +
+        '<button class="btn btn-ghost" onclick="App.instance.openPhotoWall();App.instance.closeAvatarCard()">📷 照片墙</button>' +
+      '</div>';
+  }
+
+  _getCountdownDays() {
+    var target = new Date('2026-12-19');
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
   // ── Reuse Yesterday ──────────────────────────────────────
   reuseYesterday(subId) {
     var yesterday = new Date();
@@ -1758,6 +1832,184 @@ class App {
     document.body.style.overflow = '';
   }
 
+  // ── History Overlay ──────────────────────────────────────
+  openHistory() {
+    var self = this;
+    var overlay = document.getElementById('historyOverlay');
+    if (!overlay) return;
+    overlay.classList.add('show');
+    this._histCurrentMode = 'day';
+    this._renderHistoryBody('day');
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeHistory() {
+    var overlay = document.getElementById('historyOverlay');
+    if (overlay) overlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  _renderHistoryBody(mode) {
+    var self = this;
+    this._histCurrentMode = mode;
+    var navEl = document.getElementById('histNav');
+    var bodyEl = document.getElementById('histBody');
+    var summaryEl = document.getElementById('histSummary');
+
+    // Toggle mode buttons
+    var dayBtn = document.getElementById('histModeDay');
+    var monthBtn = document.getElementById('histModeMonth');
+    if (dayBtn) dayBtn.classList.toggle('active', mode === 'day');
+    if (monthBtn) monthBtn.classList.toggle('active', mode === 'month');
+
+    // Gather all logged dates
+    var allDates = Object.keys(this.data.dailyLogs).sort().reverse();
+    if (allDates.length === 0) {
+      if (navEl) navEl.innerHTML = '';
+      if (bodyEl) bodyEl.innerHTML = '<div class="hist-empty">还没有学习记录，从今天开始打卡吧 🌱</div>';
+      if (summaryEl) summaryEl.innerHTML = '';
+      return;
+    }
+
+    if (mode === 'day') {
+      var idx = this._histDayIdx || 0;
+      if (idx >= allDates.length) idx = 0;
+      this._histDayIdx = idx;
+      var date = allDates[idx];
+      var dayLogs = this.data.dailyLogs[date] || [];
+
+      // Navigation
+      var dayLabel = date + ' 星期' + App.dayOfWeek(date);
+      if (navEl) {
+        navEl.innerHTML =
+          '<button ' + (idx >= allDates.length - 1 ? 'disabled' : '') + ' onclick="App.instance._histNavDay(-1)">◀</button>' +
+          '<span class="hist-date-label">' + dayLabel + '</span>' +
+          '<button ' + (idx <= 0 ? 'disabled' : '') + ' onclick="App.instance._histNavDay(1)">▶</button>';
+      }
+
+      // Body: group by subject
+      var subMap = { math2: { name: '数学二', icon: '📐' }, cs819: { name: '819', icon: '💻' }, english2: { name: '英语二', icon: '📖' }, politics: { name: '政治', icon: '📰' } };
+      var moodMap = { easy: '😊', normal: '😐', hard: '😣' };
+      var totalH = 0;
+      var html = '';
+      Object.keys(subMap).forEach(function(sid) {
+        var entries = dayLogs.filter(function(e) { return e.subject === sid; });
+        if (entries.length === 0) return;
+        var subH = entries.reduce(function(s, e) { return s + (e.duration || 0); }, 0);
+        totalH += subH;
+        html += '<div class="hist-subject-group">' +
+          '<div class="hist-subject-head">' +
+            subMap[sid].icon + ' ' + subMap[sid].name +
+            '<span class="hist-subject-stat">' + entries.length + '次 · ' + subH.toFixed(1) + 'h</span>' +
+          '</div>';
+        entries.forEach(function(e) {
+          var chName = '';
+          if (e.chapterIdx != null) {
+            var info = self.getChapterByGlobalIndex(sid, e.chapterIdx);
+            if (info) chName = info.chapter;
+          }
+          html += '<div class="hist-session-row">' +
+            '<span class="hist-session-icon">' + (moodMap[e.mood] || '😊') + '</span>' +
+            '<span class="hist-session-label">' + (chName || e.content || '无记录') + '</span>' +
+            '<span class="hist-session-dur">' + e.duration + 'h</span>' +
+          '</div>';
+        });
+        html += '</div>';
+      });
+      if (bodyEl) bodyEl.innerHTML = html || '<div class="hist-empty">当天无记录</div>';
+      if (summaryEl) summaryEl.innerHTML = '共 <strong>' + dayLogs.length + '</strong> 条记录 · 累计 <strong>' + totalH.toFixed(1) + 'h</strong>';
+
+    } else {
+      // Monthly view — show last 6 months
+      var today = new Date();
+      var months = [];
+      for (var m = 0; m < 6; m++) {
+        var d = new Date(today.getFullYear(), today.getMonth() - m, 1);
+        months.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
+      }
+      var monthLabels = ['日', '一', '二', '三', '四', '五', '六'];
+      var navIdx = this._histMonthIdx || 0;
+      if (navIdx >= months.length) navIdx = 0;
+      this._histMonthIdx = navIdx;
+      var mm = months[navIdx];
+
+      if (navEl) {
+        navEl.innerHTML =
+          '<button ' + (navIdx >= months.length - 1 ? 'disabled' : '') + ' onclick="App.instance._histNavMonth(-1)">◀</button>' +
+          '<span class="hist-date-label">' + mm.year + '年' + mm.month + '月</span>' +
+          '<button ' + (navIdx <= 0 ? 'disabled' : '') + ' onclick="App.instance._histNavMonth(1)">▶</button>';
+      }
+
+      // Build calendar grid
+      var firstDay = new Date(mm.year, mm.month - 1, 1).getDay();
+      var daysInMonth = new Date(mm.year, mm.month, 0).getDate();
+      var html = '<div class="hist-month-grid">';
+      monthLabels.forEach(function(l) { html += '<div class="hist-month-dayhead">' + l + '</div>'; });
+      for (var i = 0; i < firstDay; i++) html += '<div class="hist-month-cell empty"></div>';
+      for (var day = 1; day <= daysInMonth; day++) {
+        var dateStr = mm.year + '-' + String(mm.month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        var dayLogs = self.data.dailyLogs[dateStr] || [];
+        var dayH = dayLogs.reduce(function(s, e) { return s + (e.duration || 0); }, 0);
+        var hasData = dayLogs.length > 0;
+        var cellClass = 'hist-month-cell' + (hasData ? '' : ' no-data');
+        var bg = hasData ? 'background: var(--accent-wash); cursor: pointer;' : '';
+        html += '<div class="' + cellClass + '" style="' + bg + '"' +
+          (hasData ? ' onclick="App.instance._histJumpDay(\'' + dateStr + '\')"' : '') + '>' +
+          '<span class="hist-month-daynum">' + day + '</span>' +
+          (dayH > 0 ? '<span class="hist-month-pomo">' + dayH.toFixed(1) + 'h</span>' : '') +
+        '</div>';
+      }
+      html += '</div>';
+
+      // Monthly breakdown
+      var monthTotals = {};
+      var monthTotalH = 0, monthEntries = 0;
+      for (var dm = 1; dm <= daysInMonth; dm++) {
+        var ds = mm.year + '-' + String(mm.month).padStart(2, '0') + '-' + String(dm).padStart(2, '0');
+        (self.data.dailyLogs[ds] || []).forEach(function(e) {
+          var sub = e.subject;
+          if (!monthTotals[sub]) monthTotals[sub] = { h: 0, n: 0 };
+          monthTotals[sub].h += e.duration || 0;
+          monthTotals[sub].n += 1;
+          monthTotalH += e.duration || 0;
+          monthEntries += 1;
+        });
+      }
+      var subMap = { math2: { name: '数学二', icon: '📐' }, cs819: { name: '819', icon: '💻' }, english2: { name: '英语二', icon: '📖' }, politics: { name: '政治', icon: '📰' } };
+      html += '<div class="hist-month-breakdown">';
+      Object.keys(subMap).forEach(function(sid) {
+        var t = monthTotals[sid];
+        html += '<div class="hist-month-sub">' +
+          '<span>' + subMap[sid].icon + ' ' + subMap[sid].name + '</span>' +
+          '<span>' + (t ? t.n + '次 · ' + t.h.toFixed(1) + 'h' : '--') + '</span>' +
+        '</div>';
+      });
+      html += '</div>';
+
+      if (bodyEl) bodyEl.innerHTML = html;
+      if (summaryEl) summaryEl.innerHTML = '共 <strong>' + monthEntries + '</strong> 次打卡 · 累计 <strong>' + monthTotalH.toFixed(1) + 'h</strong>';
+    }
+  }
+
+  _histNavDay(dir) {
+    this._histDayIdx = (this._histDayIdx || 0) - dir;
+    this._renderHistoryBody('day');
+  }
+
+  _histNavMonth(dir) {
+    this._histMonthIdx = (this._histMonthIdx || 0) - dir;
+    this._renderHistoryBody('month');
+  }
+
+  _histJumpDay(dateStr) {
+    var allDates = Object.keys(this.data.dailyLogs).sort().reverse();
+    var idx = allDates.indexOf(dateStr);
+    if (idx >= 0) {
+      this._histDayIdx = idx;
+      this._renderHistoryBody('day');
+    }
+  }
+
   renderPhotoSpread(filterSub) {
     var self = this;
     this._pwCurrentFilter = filterSub;
@@ -1999,6 +2251,47 @@ class App {
       btn.addEventListener('click', () => this.switchPage(btn.dataset.page));
     });
 
+    // Header strip toggle
+    var stripToggle = document.getElementById('stripToggleBtn');
+    if (stripToggle) {
+      stripToggle.addEventListener('click', function() {
+        var strip = document.getElementById('headerStrip');
+        var actions = document.querySelector('.data-actions');
+        var isOpen = strip && strip.style.display !== 'none';
+        if (isOpen) {
+          if (strip) strip.style.display = 'none';
+          if (actions) actions.classList.remove('show');
+          stripToggle.classList.remove('open');
+        } else {
+          if (strip) strip.style.display = '';
+          if (actions) actions.classList.add('show');
+          stripToggle.classList.add('open');
+        }
+      });
+    }
+
+    // Avatar card — click avatar to open personal dashboard
+    var avatarWrap = document.getElementById('avatarWrap');
+    if (avatarWrap) {
+      avatarWrap.addEventListener('click', function(e) {
+        e.stopPropagation();
+        self.toggleAvatarCard();
+      });
+    }
+    var avatarBackdrop = document.getElementById('avatarCardBackdrop');
+    if (avatarBackdrop) {
+      avatarBackdrop.addEventListener('click', function(e) {
+        e.stopPropagation();
+        self.closeAvatarCard();
+      });
+    }
+    var avatarCard = document.getElementById('avatarCard');
+    if (avatarCard) {
+      avatarCard.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+    }
+
     // Export / Import
     document.getElementById('btnExport')?.addEventListener('click', () => {
       StorageManager.exportData();
@@ -2166,8 +2459,8 @@ class App {
     document.getElementById('pwClose')?.addEventListener('click', function() {
       self.closePhotoWall();
     });
-    // Filter buttons
-    document.querySelectorAll('.pw-filter').forEach(function(btn) {
+    // Filter buttons (only photo wall, not history)
+    photoWallOverlay?.querySelectorAll('.pw-filter').forEach(function(btn) {
       btn.addEventListener('click', function() {
         self.renderPhotoSpread(btn.dataset.filter);
       });
@@ -2185,6 +2478,21 @@ class App {
       if (self._pwLightboxId != null) self.deletePhoto(self._pwLightboxId);
     });
 
+    // ── History Overlay ─────────────────────────────────
+    var historyOverlay = document.getElementById('historyOverlay');
+    document.getElementById('histClose')?.addEventListener('click', function() {
+      self.closeHistory();
+    });
+    historyOverlay?.addEventListener('click', function(e) {
+      if (e.target === historyOverlay) self.closeHistory();
+    });
+    document.getElementById('histModeDay')?.addEventListener('click', function() {
+      self._renderHistoryBody('day');
+    });
+    document.getElementById('histModeMonth')?.addEventListener('click', function() {
+      self._renderHistoryBody('month');
+    });
+
     // ESC key to close
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && settingsModal?.classList.contains('show')) {
@@ -2196,6 +2504,12 @@ class App {
         } else {
           self.closePhotoWall();
         }
+      }
+      if (e.key === 'Escape' && historyOverlay?.classList.contains('show')) {
+        self.closeHistory();
+      }
+      if (e.key === 'Escape' && document.getElementById('avatarCard')?.classList.contains('show')) {
+        self.closeAvatarCard();
       }
     });
   }

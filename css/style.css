@@ -182,6 +182,7 @@ h1, h2, h3, h4 {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .header-avatar-ring {
@@ -191,6 +192,20 @@ h1, h2, h3, h4 {
   border-radius: 50%;
   background: var(--accent-wash);
   opacity: 0.6;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.35s ease,
+              box-shadow 0.35s ease;
+}
+
+.header-avatar-wrap:hover .header-avatar-ring {
+  opacity: 0.85;
+  transform: scale(1.08);
+  box-shadow: 0 0 24px rgba(123,91,91,0.12);
+}
+
+.header-avatar-wrap:active .header-avatar-ring {
+  transform: scale(0.95);
+  transition: transform 0.15s ease;
 }
 
 .header-avatar {
@@ -283,27 +298,56 @@ h1, h2, h3, h4 {
 .strip-icon { font-size: 0.75rem; opacity: 0.6; }
 .strip-sep  { color: var(--border-strong); font-weight: 200; }
 
-/* Daily Quote */
+/* Daily Quote — in main content, non-sticky */
 .daily-quote {
   text-align: center;
   font-family: var(--font-serif);
   font-style: italic;
   font-size: var(--text-xs);
   color: var(--text-tertiary);
-  padding: 6px 20px 2px;
+  padding: 0 20px 12px;
   line-height: 1.6;
   letter-spacing: 0.03em;
 }
 
-/* Data Actions */
-.data-actions {
+/* Header Strip — collapsible */
+#headerStripWrap { margin-top: 6px; }
+
+.strip-toggle-btn {
   display: flex;
   align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.strip-toggle-btn:hover { color: var(--text-secondary); }
+
+.strip-toggle-btn .arrow {
+  font-size: 0.5rem;
+  transition: transform var(--dur) var(--ease);
+}
+
+.strip-toggle-btn.open .arrow { transform: rotate(180deg); }
+
+/* Data Actions — hidden by default, shown when strip expanded */
+.data-actions {
+  display: none;
+  align-items: center;
   gap: 6px;
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 0.5px solid var(--border);
 }
+
+.data-actions.show { display: flex; }
 
 /* ── Main Content ─────────────────────────────────────── */
 .main-content {
@@ -754,6 +798,161 @@ h1, h2, h3, h4 {
 .radio-backdrop.show {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ── Avatar Card (click avatar → personal dashboard) ───── */
+.avatar-card-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  background: rgba(0,0,0,0.04);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease);
+}
+
+.avatar-card-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.avatar-card {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  width: min(calc(100vw - 32px), 340px);
+  background: var(--card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  border: 0.5px solid var(--border);
+  z-index: 135;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 20px 20px 16px;
+}
+
+.avatar-card.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.avatar-card-greeting {
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  color: var(--accent);
+  margin-bottom: 12px;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.avatar-card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.avatar-card-stat {
+  background: var(--card-alt);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.avatar-card-stat-val {
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.avatar-card-stat-label {
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  letter-spacing: 0.03em;
+}
+
+/* Per-subject mini bars */
+.avatar-card-subs {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.avatar-card-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-2xs);
+}
+
+.avatar-card-sub-icon {
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+.avatar-card-sub-name {
+  width: 32px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-weight: 450;
+}
+
+.avatar-card-sub-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.avatar-card-sub-fill {
+  height: 100%;
+  border-radius: 0;
+  background: var(--accent);
+  transition: width 0.6s var(--ease-out);
+}
+
+.avatar-card-sub-pct {
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-2xs);
+  color: var(--accent);
+  font-weight: 550;
+}
+
+.avatar-card-quote {
+  text-align: center;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  padding: 8px 4px;
+  margin-bottom: 14px;
+  line-height: 1.6;
+  border-top: 0.5px solid var(--border);
+  border-bottom: 0.5px solid var(--border);
+}
+
+.avatar-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.avatar-card-actions .btn {
+  flex: 1;
+  font-size: var(--text-2xs);
+  padding: 8px 10px;
 }
 
 /* Tomato Overlay — fullscreen flex centering (same as modal-overlay) */
