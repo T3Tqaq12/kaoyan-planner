@@ -2408,6 +2408,10 @@ class App {
       statusEl.className = `push-status show ${type}`;
     }
 
+    function hideStatus() {
+      if (statusEl) statusEl.className = 'push-status';
+    }
+
     var githubStatusEl2 = document.getElementById('githubStatus');
     function hideAllStatus() {
       hideStatus();
