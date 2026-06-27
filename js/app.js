@@ -627,10 +627,10 @@ class PushService {
 
   static async uploadToGitHub(dataUrl, filename) {
     var config = PushService.getConfig();
-    if (!config.githubToken) return null;
+    if (!config.githubToken) return { ok: false, error: '未配置 GitHub Token', code: 'no_token' };
     try {
       var base64 = dataUrl.split(',')[1];
-      if (!base64) return null;
+      if (!base64) return { ok: false, error: '图片数据解析失败', code: 'bad_data' };
       var resp = await fetch('https://api.github.com/repos/T3Tqaq12/kaoyan-planner/contents/photos/' + filename, {
         method: 'PUT',
         headers: {
@@ -643,10 +643,21 @@ class PushService {
           branch: 'master'
         })
       });
-      if (!resp.ok) { console.warn('GitHub upload failed:', resp.status); return null; }
+      if (!resp.ok) {
+        var errMsg = 'GitHub 上传失败';
+        if (resp.status === 401) errMsg = 'GitHub Token 无效或已过期，请在设置中更新';
+        else if (resp.status === 403) errMsg = 'GitHub API 限额或权限不足';
+        else if (resp.status === 422) errMsg = 'GitHub 文件已存在或格式不支持';
+        else errMsg = 'GitHub 上传失败 (HTTP ' + resp.status + ')';
+        console.warn(errMsg);
+        return { ok: false, error: errMsg, code: 'http_' + resp.status };
+      }
       // Use jsDelivr CDN — more stable in China than raw.githubusercontent.com
-      return 'https://cdn.jsdelivr.net/gh/T3Tqaq12/kaoyan-planner@master/photos/' + filename;
-    } catch (e) { console.warn('GitHub upload error:', e); return null; }
+      return { ok: true, url: 'https://cdn.jsdelivr.net/gh/T3Tqaq12/kaoyan-planner@master/photos/' + filename };
+    } catch (e) {
+      console.warn('GitHub upload error:', e);
+      return { ok: false, error: '网络请求失败，请检查网络连接', code: 'network' };
+    }
   }
 }
 
@@ -822,7 +833,7 @@ class App {
     card.id = 'welcomeCard';
     card.className = 'card';
     card.style.cssText = 'text-align:center;padding:20px 18px;margin-bottom:12px;border:1px dashed var(--border-strong);background:var(--accent-wash);';
-    card.innerHTML = '<p style="font-family:var(--font-serif);font-size:var(--text-md);font-weight:550;margin-bottom:8px">你好嘉敏 👋</p>' +
+    card.innerHTML = '<p style="font-family:var(--font-serif);font-size:var(--text-md);font-weight:550;margin-bottom:8px">你好虾米 👋</p>' +
       '<p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6">从底部选择一个科目<br>开始今天的打卡吧</p>';
     main.insertBefore(card, main.firstChild);
   }
@@ -1388,29 +1399,48 @@ class App {
 
       // Upload photos to GitHub for push display
       var photoUrls = [];
-      if (pendingPhotos.length > 0 && PushService.getConfig().githubToken) {
-        for (var pi = 0; pi < pendingPhotos.length; pi++) {
-          var p = pendingPhotos[pi];
-          var ts = Date.now();
-          var filename = today + '_' + subId + '_' + ts + '_' + (pi + 1) + '.jpg';
-          var url = await PushService.uploadToGitHub(p.dataUrl, filename);
-          if (url) photoUrls.push(url);
-        }
-        // Wait 2s for jsDelivr CDN to pick up the new file before pushing
-        if (photoUrls.length > 0) {
-          await new Promise(function(r) { setTimeout(r, 2000); });
+      if (pendingPhotos.length > 0) {
+        var githubToken = PushService.getConfig().githubToken;
+        if (!githubToken) {
+          self.showToast('📷 照片未上传 GitHub：未配置 Token，可在设置中添加');
+        } else {
+          var uploadOk = 0, uploadFail = 0;
+          var firstUploadError = '';
+          for (var pi = 0; pi < pendingPhotos.length; pi++) {
+            var p = pendingPhotos[pi];
+            var ts = Date.now();
+            var filename = today + '_' + subId + '_' + ts + '_' + (pi + 1) + '.jpg';
+            var uploadResult = await PushService.uploadToGitHub(p.dataUrl, filename);
+            if (uploadResult.ok) {
+              photoUrls.push(uploadResult.url);
+              uploadOk++;
+            } else {
+              uploadFail++;
+              if (!firstUploadError) firstUploadError = uploadResult.error || '未知错误';
+            }
+          }
+          if (uploadFail > 0) {
+            self.showToast('📷 ' + uploadFail + '/' + pendingPhotos.length + ' 张照片上传 GitHub 失败：' + firstUploadError);
+          }
+          // Wait 2s for jsDelivr CDN to pick up the new files before pushing
+          if (photoUrls.length > 0) {
+            await new Promise(function(r) { setTimeout(r, 2000); });
+          }
         }
       }
 
-      // Push with failure feedback
-      PushService.send(entry, sub.name, chapterName, photoIds.length, photoUrls).then(function(result) {
-        if (!result.ok && PushService.isConfigured()) {
-          self.showToast('📤 推送未成功，可在设置中重试');
-        }
-      }).catch(function(e) {
-        if (PushService.isConfigured()) { self.showToast('📤 推送未成功，可在设置中重试'); }
-        console.log('推送异常:', e);
-      });
+      // Push to WeChat via Server酱 — always attempt if configured
+      var pushConfigured = PushService.isConfigured();
+      if (pushConfigured) {
+        PushService.send(entry, sub.name, chapterName, photoIds.length, photoUrls).then(function(result) {
+          if (!result.ok) {
+            self.showToast('📤 推送失败：' + (result.error || '未知错误'));
+          }
+        }).catch(function(e) {
+          self.showToast('📤 推送异常，请检查网络或设置');
+          console.log('推送异常:', e);
+        });
+      }
 
       // Re-enable button after save completes
       if (checkinBtn) { checkinBtn.disabled = false; checkinBtn.textContent = '✨ ' + sub.name + '打卡'; }
@@ -2153,7 +2183,7 @@ class App {
       toast.style.cssText = `
         position:fixed;top:20px;left:50%;transform:translateX(-50%);
         background:var(--text);color:#FFF;padding:10px 22px;border-radius:20px;
-        font-size:0.85rem;z-index:1000;font-family:var(--font-sans);font-weight:600;
+        font-size:0.85rem;z-index:700;font-family:var(--font-sans);font-weight:600;
         transition:opacity 0.3s ease;opacity:0;pointer-events:none;box-shadow:var(--shadow-lg);
       `;
       document.body.appendChild(toast);
@@ -2174,7 +2204,7 @@ class App {
       toast.style.cssText = `
         position:fixed;top:20px;left:50%;transform:translateX(-50%);
         background:var(--text);color:#FFF;padding:10px 22px;border-radius:20px;
-        font-size:0.85rem;z-index:1000;font-family:var(--font-sans);font-weight:600;
+        font-size:0.85rem;z-index:700;font-family:var(--font-sans);font-weight:600;
         transition:opacity 0.3s ease;opacity:0;pointer-events:auto;box-shadow:var(--shadow-lg);
       `;
       document.body.appendChild(toast);
@@ -2206,7 +2236,7 @@ class App {
       toast.style.cssText = `
         position:fixed;top:20px;left:50%;transform:translateX(-50%);
         background:var(--text);color:#FFF;padding:12px 22px;border-radius:16px;
-        font-size:0.82rem;z-index:1000;font-family:var(--font-sans);font-weight:500;
+        font-size:0.82rem;z-index:700;font-family:var(--font-sans);font-weight:500;
         transition:opacity 0.3s ease;opacity:0;pointer-events:auto;
         box-shadow:var(--shadow-lg);text-align:center;max-width:340px;
         line-height:1.5;
@@ -2378,8 +2408,10 @@ class App {
       statusEl.className = `push-status show ${type}`;
     }
 
-    function hideStatus() {
-      if (statusEl) statusEl.className = 'push-status';
+    var githubStatusEl2 = document.getElementById('githubStatus');
+    function hideAllStatus() {
+      hideStatus();
+      if (githubStatusEl2) githubStatusEl2.className = 'push-status';
     }
 
     function openSettings() {
@@ -2390,13 +2422,13 @@ class App {
       if (sendKeyInput) sendKeyInput.value = config.sendKey || '';
       if (titleInput) titleInput.value = config.titleTpl || '{subject} 打卡 · {duration}h';
       if (githubTokenInput) githubTokenInput.value = config.githubToken || '';
-      hideStatus();
+      hideAllStatus();
       settingsModal?.classList.add('show');
     }
 
     function closeSettings() {
       settingsModal?.classList.remove('show');
-      hideStatus();
+      hideAllStatus();
     }
 
     // Open
@@ -2445,6 +2477,42 @@ class App {
         showStatus(`❌ 推送失败：${result.error || '未知错误'}`, 'error');
         // Restore key to input for correction
         document.getElementById('pushSendKey').value = sendKey;
+      }
+    });
+
+    // Test GitHub token
+    var githubStatusEl = document.getElementById('githubStatus');
+    function showGithubStatus(msg, type) {
+      if (!githubStatusEl) return;
+      githubStatusEl.textContent = msg;
+      githubStatusEl.className = 'push-status show ' + type;
+    }
+    function hideGithubStatus() {
+      if (githubStatusEl) githubStatusEl.className = 'push-status';
+    }
+    document.getElementById('btnTestGithub')?.addEventListener('click', async () => {
+      const githubToken = document.getElementById('pushGithubToken')?.value?.trim();
+      if (!githubToken) {
+        showGithubStatus('请先填写 GitHub Token', 'error');
+        return;
+      }
+      showGithubStatus('正在验证 GitHub Token...', 'loading');
+      try {
+        // Test token by listing repo contents (read-only, no side effects)
+        var resp = await fetch('https://api.github.com/repos/T3Tqaq12/kaoyan-planner/contents/photos', {
+          headers: { Authorization: 'token ' + githubToken }
+        });
+        if (resp.ok) {
+          showGithubStatus('✅ GitHub Token 有效！可以上传照片', 'success');
+        } else if (resp.status === 401) {
+          showGithubStatus('❌ Token 无效或已过期，请重新生成', 'error');
+        } else if (resp.status === 403) {
+          showGithubStatus('❌ API 限额或权限不足（需勾选 repo 权限）', 'error');
+        } else {
+          showGithubStatus('⚠️ 验证异常 (HTTP ' + resp.status + ')，请检查网络', 'error');
+        }
+      } catch (e) {
+        showGithubStatus('❌ 网络请求失败，请检查网络连接', 'error');
       }
     });
 
