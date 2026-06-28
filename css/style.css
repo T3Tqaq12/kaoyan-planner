@@ -2572,6 +2572,67 @@ h1, h2, h3, h4 {
   color: var(--text-secondary);
 }
 
+/* ── Sync Section ─────────────────────────────────────── */
+.sync-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 14px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 450;
+}
+.sync-divider::before,
+.sync-divider::after {
+  content: '';
+  flex: 1;
+  height: 0.5px;
+  background: var(--border);
+}
+.sync-desc {
+  font-size: var(--text-2xs);
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+.sync-actions {
+  margin-top: 0;
+}
+.sync-result {
+  margin-top: 16px;
+  text-align: center;
+}
+.sync-qr-image {
+  width: 180px;
+  height: 180px;
+  border-radius: var(--r);
+  border: 0.5px solid var(--border);
+  background: #fff;
+}
+.sync-qr-hint {
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  margin: 10px 0 8px;
+}
+.sync-link-row {
+  display: flex;
+  gap: 6px;
+}
+.sync-link-input {
+  flex: 1;
+  font-size: var(--text-2xs);
+  font-family: var(--font-mono, 'SF Mono', 'Cascadia Code', monospace);
+  padding: 6px 10px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--card-alt);
+  color: var(--text-secondary);
+}
+.sync-link-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 /* ── Scrollbar ────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

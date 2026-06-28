@@ -800,6 +800,7 @@ class App {
     this.renderCountdown();
     this._startMidnightRefresh();
     this.initPhotoStore();
+    this._checkSyncURL();
   }
 
   // ── Render All ───────────────────────────────────────────
@@ -2272,6 +2273,43 @@ class App {
     this._toastTimer = setTimeout(dismiss, 15000);
   }
 
+  // ── Sync URL Detection ──────────────────────────────────
+  /** 页面加载时检测 ?s=...&k=... 参数，自动解密同步 */
+  _checkSyncURL() {
+    var params = new URLSearchParams(window.location.search);
+    var s = params.get('s');
+    var k = params.get('k');
+    if (!s || !k) return;
+
+    // 稍微延迟，让页面先渲染
+    var self = this;
+    setTimeout(function() {
+      SyncService.decrypt(k, s).then(function(plaintext) {
+        var config = JSON.parse(plaintext);
+        // 合并而非覆盖：保留已有的学习数据
+        var existing = PushService.getConfig();
+        var merged = {
+          sendKey: config.sendKey || existing.sendKey || '',
+          githubToken: config.githubToken || existing.githubToken || '',
+          titleTpl: config.titleTpl || existing.titleTpl || '{subject} 打卡 &middot; {duration}h'
+        };
+        PushService.saveConfig(merged);
+        self.showToast('✅ 设置已自动同步！');
+        self._cleanSyncURL();
+      }).catch(function(e) {
+        self.showToast('❌ 同步失败：' + (e.message || '链接无效'));
+        self._cleanSyncURL();
+      });
+    }, 600);
+  }
+
+  _cleanSyncURL() {
+    var url = new URL(window.location);
+    url.searchParams.delete('s');
+    url.searchParams.delete('k');
+    window.history.replaceState({}, '', url.toString());
+  }
+
   // ── Global Events ────────────────────────────────────────
   bindGlobalEvents() {
     var self = this;
@@ -2427,12 +2465,16 @@ class App {
       if (titleInput) titleInput.value = config.titleTpl || '{subject} 打卡 · {duration}h';
       if (githubTokenInput) githubTokenInput.value = config.githubToken || '';
       hideAllStatus();
+      hideSyncStatus();
+      var syncRes = document.getElementById('syncResult');
+      if (syncRes) syncRes.style.display = 'none';
       settingsModal?.classList.add('show');
     }
 
     function closeSettings() {
       settingsModal?.classList.remove('show');
       hideAllStatus();
+      hideSyncStatus();
     }
 
     // Open
@@ -2518,6 +2560,61 @@ class App {
       } catch (e) {
         showGithubStatus('❌ 网络请求失败，请检查网络连接', 'error');
       }
+    });
+
+    // ── Sync: Generate link + QR ──────────────────────────
+    var syncStatusEl = document.getElementById('syncStatus');
+    function showSyncStatus(msg, type) {
+      if (!syncStatusEl) return;
+      syncStatusEl.textContent = msg;
+      syncStatusEl.className = 'push-status show ' + type;
+    }
+    function hideSyncStatus() {
+      if (syncStatusEl) syncStatusEl.className = 'push-status';
+    }
+
+    document.getElementById('btnSyncGenerate')?.addEventListener('click', async function() {
+      showSyncStatus('正在加密生成...', 'loading');
+      try {
+        // 实时读取当前输入，确保最新值进同步
+        var sendKey = document.getElementById('pushSendKey')?.value?.trim() || '';
+        var githubToken = document.getElementById('pushGithubToken')?.value?.trim() || '';
+        var titleTpl = document.getElementById('pushTitle')?.value?.trim() || '{subject} 打卡 · {duration}h';
+
+        if (!sendKey && !githubToken) {
+          showSyncStatus('⚠️ 当前没有任何设置可同步，请先配置 SendKey 或 GitHub Token', 'error');
+          return;
+        }
+
+        var config = { sendKey: sendKey, githubToken: githubToken, titleTpl: titleTpl };
+        var url = await SyncService.generateSyncURL(config);
+
+        // 显示二维码
+        var qrImg = document.getElementById('syncQRImage');
+        var linkInput = document.getElementById('syncLinkInput');
+        var syncResult = document.getElementById('syncResult');
+
+        if (qrImg) qrImg.src = SyncService.getQRCodeURL(url);
+        if (linkInput) linkInput.value = url;
+        if (syncResult) syncResult.style.display = '';
+
+        showSyncStatus('✅ 用另一设备扫码或打开链接即可同步', 'success');
+      } catch (e) {
+        showSyncStatus('❌ 生成失败：' + (e.message || '加密错误'), 'error');
+      }
+    });
+
+    // Copy link
+    document.getElementById('btnSyncCopy')?.addEventListener('click', function() {
+      var linkInput = document.getElementById('syncLinkInput');
+      if (!linkInput) return;
+      linkInput.select();
+      document.execCommand('copy');
+      // Modern fallback
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(linkInput.value).catch(function() {});
+      }
+      showSyncStatus('📋 链接已复制，发送给另一设备即可', 'success');
     });
 
     // ── Photo Wall ─────────────────────────────────────

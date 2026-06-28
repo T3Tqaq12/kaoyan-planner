@@ -306,6 +306,28 @@
         </div>
         <div class="push-status" id="pushStatus"></div>
         <div class="push-status" id="githubStatus"></div>
+
+        <!-- ── 跨设备同步 ────────────────────────────── -->
+        <div class="sync-divider"><span>🔄 跨设备同步</span></div>
+
+        <div class="sync-section">
+          <p class="sync-desc">生成加密链接或二维码，另一设备扫码/打开即自动同步设置。无需输入密码。</p>
+
+          <div class="modal-actions sync-actions">
+            <button class="btn btn-primary btn-sm" id="btnSyncGenerate">🔗 生成同步链接</button>
+          </div>
+
+          <div class="push-status" id="syncStatus"></div>
+
+          <div class="sync-result" id="syncResult" style="display:none;">
+            <img id="syncQRImage" src="" alt="同步二维码" class="sync-qr-image">
+            <p class="sync-qr-hint">另一设备扫码，或复制链接在另一设备浏览器打开</p>
+            <div class="sync-link-row">
+              <input type="text" id="syncLinkInput" class="sync-link-input" readonly>
+              <button class="btn btn-ghost btn-xs" id="btnSyncCopy">📋 复制</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -316,6 +338,7 @@
   <script src="js/quotes.js"></script>
   <script src="js/photos.js"></script>
   <script src="js/pomodoro.js"></script>
+  <script src="js/sync-service.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
