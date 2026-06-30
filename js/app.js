@@ -1398,12 +1398,16 @@ class App {
         if (info) chapterName = info.phase + ' › ' + info.chapter;
       }
 
+      // ── Status collector — all outcomes go into one combined toast ──
+      var statusLines = [];    // collects status lines to show after checkin
+      var pushStatusPromise = null;  // for async push result
+
       // Upload photos to GitHub for push display
       var photoUrls = [];
       if (pendingPhotos.length > 0) {
         var githubToken = PushService.getConfig().githubToken;
         if (!githubToken) {
-          self.showToast('📷 照片未上传 GitHub：未配置 Token，可在设置中添加');
+          statusLines.push('📷 照片未上传：未配置 GitHub Token');
         } else {
           var uploadOk = 0, uploadFail = 0;
           var firstUploadError = '';
@@ -1420,8 +1424,12 @@ class App {
               if (!firstUploadError) firstUploadError = uploadResult.error || '未知错误';
             }
           }
-          if (uploadFail > 0) {
-            self.showToast('📷 ' + uploadFail + '/' + pendingPhotos.length + ' 张照片上传 GitHub 失败：' + firstUploadError);
+          if (uploadFail === 0) {
+            statusLines.push('📷 ' + uploadOk + '/' + pendingPhotos.length + ' 张照片已上传 GitHub');
+          } else if (uploadOk === 0) {
+            statusLines.push('📷 上传失败：' + firstUploadError);
+          } else {
+            statusLines.push('📷 ' + uploadOk + '/' + pendingPhotos.length + ' 成功（' + uploadFail + ' 失败）');
           }
           // Wait 2s for jsDelivr CDN to pick up the new files before pushing
           if (photoUrls.length > 0) {
@@ -1430,17 +1438,18 @@ class App {
         }
       }
 
-      // Push to WeChat via Server酱 — always attempt if configured
+      // Push to WeChat via Server酱
       var pushConfigured = PushService.isConfigured();
       if (pushConfigured) {
-        PushService.send(entry, sub.name, chapterName, photoIds.length, photoUrls).then(function(result) {
-          if (!result.ok) {
-            self.showToast('📤 推送失败：' + (result.error || '未知错误'));
-          }
+        statusLines.push('📤 推送：发送中…');
+        pushStatusPromise = PushService.send(entry, sub.name, chapterName, photoIds.length, photoUrls).then(function(result) {
+          return result.ok ? '📤 推送成功 ✅' : ('📤 推送失败：' + (result.error || '未知错误'));
         }).catch(function(e) {
-          self.showToast('📤 推送异常，请检查网络或设置');
           console.log('推送异常:', e);
+          return '📤 推送异常，请检查网络';
         });
+      } else {
+        statusLines.push('📤 推送：未配置（可在设置中添加）');
       }
 
       // Re-enable button after save completes
@@ -1448,11 +1457,10 @@ class App {
 
       self.renderAll();
 
-      // Undo toast — 5-second window to roll back the last checkin
-      self._showUndoToast(function performUndo() {
+      // ── Combined status toast with undo ────────────────────
+      self._showCheckinStatusToast(statusLines, pushStatusPromise, function performUndo() {
         self.data = prevData;
         StorageManager.save(self.data);
-        // Clean up just-uploaded photos from IndexedDB
         if (photoIds.length > 0) {
           photoIds.forEach(function(id) { PhotoStore.delete(id).catch(function() {}); });
         }
@@ -2194,6 +2202,80 @@ class App {
     toast.style.pointerEvents = 'none';
     clearTimeout(this._toastTimer);
     this._toastTimer = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+  }
+
+  /**
+   * Combined checkin status toast — shows upload + push results together,
+   * async push result updates the toast when it resolves.
+   * No more error toasts getting overridden by "已打卡 ✅".
+   */
+  _showCheckinStatusToast(statusLines, pushStatusPromise, onUndo) {
+    var self = this;
+    var toast = document.getElementById('toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toast';
+      toast.style.cssText = `
+        position:fixed;top:20px;left:50%;transform:translateX(-50%);
+        background:var(--text);color:#FFF;padding:12px 22px;border-radius:16px;
+        font-size:0.82rem;z-index:700;font-family:var(--font-sans);font-weight:500;
+        transition:opacity 0.3s ease;opacity:0;pointer-events:auto;box-shadow:var(--shadow-lg);
+        max-width:360px;line-height:1.6;
+      `;
+      document.body.appendChild(toast);
+    }
+    toast.style.pointerEvents = 'auto';
+    toast.style.maxWidth = '360px';
+    toast.style.lineHeight = '1.6';
+
+    var pushIdx = -1;
+    var html = '<div style="font-weight:600;margin-bottom:4px">已打卡 ✅</div>';
+    for (var i = 0; i < statusLines.length; i++) {
+      var cls = statusLines[i].indexOf('失败') > -1 || statusLines[i].indexOf('异常') > -1
+        ? 'color:#FFB3A7' : 'color:rgba(255,255,255,0.7)';
+      // Mark push line for async update
+      if (statusLines[i].indexOf('发送中…') > -1) pushIdx = i;
+      html += '<div style="font-size:0.75rem;' + cls + '" id="csLine' + i + '">' + statusLines[i] + '</div>';
+    }
+    html += '<button id="undoBtn" style="margin-top:8px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#FFF;font-weight:600;cursor:pointer;padding:3px 12px;border-radius:10px;font-size:0.78rem;font-family:var(--font-sans)">撤销</button>';
+
+    toast.innerHTML = html;
+    toast.style.opacity = '1';
+
+    // Bind undo
+    var undoBtn = document.getElementById('undoBtn');
+    if (undoBtn) {
+      undoBtn.onclick = function(e) {
+        e.stopPropagation();
+        clearTimeout(self._toastTimer);
+        toast.style.opacity = '0';
+        toast.style.pointerEvents = 'none';
+        toast.style.maxWidth = '';
+        toast.style.lineHeight = '';
+        onUndo();
+      };
+    }
+
+    // Auto-dismiss after 8s (longer — user needs to read multi-line status)
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.pointerEvents = 'none';
+      toast.style.maxWidth = '';
+      toast.style.lineHeight = '';
+    }, 8000);
+
+    // If push is pending, update the line when it resolves
+    if (pushStatusPromise && pushIdx >= 0) {
+      pushStatusPromise.then(function(resultLine) {
+        var lineEl = document.getElementById('csLine' + pushIdx);
+        if (lineEl) {
+          var isFail = resultLine.indexOf('失败') > -1 || resultLine.indexOf('异常') > -1;
+          lineEl.style.color = isFail ? '#FFB3A7' : 'rgba(255,255,255,0.7)';
+          lineEl.textContent = resultLine;
+        }
+      });
+    }
   }
 
   _showUndoToast(onUndo) {
