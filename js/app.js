@@ -2774,6 +2774,7 @@ class App {
       if (e.key === 'Escape' && loveLetterModal?.classList.contains('show')) {
         closeLoveLetter();
       }
+      if (e.key === 'Escape' && settingsModal?.classList.contains('show')) {
         closeSettings();
       }
       if (e.key === 'Escape' && photoWallOverlay?.classList.contains('show')) {
