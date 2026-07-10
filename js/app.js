@@ -2744,9 +2744,36 @@ class App {
       self._renderHistoryBody('month');
     });
 
+    // ── Love Letter Modal ────────────────────────────────
+    const loveLetterModal = document.getElementById('loveLetterModal');
+    const sketchEye = document.querySelector('.sketch-eye');
+
+    function openLoveLetter() {
+      loveLetterModal?.classList.add('show');
+    }
+
+    function closeLoveLetter() {
+      loveLetterModal?.classList.remove('show');
+    }
+
+    if (sketchEye) {
+      sketchEye.style.cursor = 'pointer';
+      sketchEye.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openLoveLetter();
+      });
+    }
+
+    document.getElementById('btnLoveLetterClose')?.addEventListener('click', closeLoveLetter);
+    loveLetterModal?.addEventListener('click', function(e) {
+      if (e.target === loveLetterModal) closeLoveLetter();
+    });
+
     // ESC key to close
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && settingsModal?.classList.contains('show')) {
+      if (e.key === 'Escape' && loveLetterModal?.classList.contains('show')) {
+        closeLoveLetter();
+      }
         closeSettings();
       }
       if (e.key === 'Escape' && photoWallOverlay?.classList.contains('show')) {
