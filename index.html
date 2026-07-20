@@ -8,6 +8,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#F7F5F1">
   <meta name="description" content="考研四科学习规划 · 西安工业大学">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="考研规划">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>考研学习规划 · 西安工业大学</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +21,43 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="app">
+  <div class="editorial-shell">
+    <aside class="editorial-sidebar" aria-label="学习导航">
+      <div class="sidebar-brand">
+        <button class="sidebar-eye" type="button" aria-label="打开写给虾米的信"
+                onclick="document.querySelector('.sketch-eye')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))">
+          <svg viewBox="0 0 92 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M19 38C30 23 55 20 72 34C58 49 35 53 19 38Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M31 28L27 21M39 24L38 16M48 24L50 15M57 27L62 20" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+            <circle cx="46" cy="37" r="10" stroke="currentColor" stroke-width="1.2"/>
+            <circle cx="48" cy="35" r="3" fill="currentColor"/>
+            <path d="M17 35C13 41 12 48 14 55" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <p class="sidebar-kicker">Xiaomi's</p>
+        <p class="sidebar-title">Study<br>Journal</p>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="科目">
+        <button class="dock-item sidebar-link active" data-page="math2"><span>01</span>数学二</button>
+        <button class="dock-item sidebar-link" data-page="cs819"><span>02</span>819 数据结构</button>
+        <button class="dock-item sidebar-link" data-page="english2"><span>03</span>英语二</button>
+        <button class="dock-item sidebar-link" data-page="politics"><span>04</span>政治</button>
+      </nav>
+
+      <div class="sidebar-tools" aria-label="学习工具">
+        <button type="button" onclick="document.getElementById('btnPhotoWall')?.click()">照片墙 <span>↗</span></button>
+        <button type="button" onclick="App.instance?.openHistory()">学习记录 <span>↗</span></button>
+        <button type="button" onclick="document.getElementById('btnSettings')?.click()">同步与设置 <span>↗</span></button>
+      </div>
+
+      <div class="sidebar-foot">
+        <span id="sidebarStreak">日拱一卒</span>
+        <small>© 2026 · For Xiaomi</small>
+      </div>
+    </aside>
+
+    <div class="app">
 
     <!-- ========== Header ========== -->
     <header class="header">
@@ -341,6 +383,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 

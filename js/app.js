@@ -4,6 +4,9 @@
    四科各自独立页面，底部导航切换
    ============================================================ */
 
+// ─── 全局配置 ─────────────────────────────────────────────
+const EXAM_DATE = '2026-12-19'; // 考研初试日期，改这里即可全站生效
+
 // ─── 科目定义 ─────────────────────────────────────────────
 const SUBJECT_DEFS = {
   math2: {
@@ -816,11 +819,20 @@ class App {
 
   renderStreakBadge() {
     const el = document.getElementById('streakBadge');
-    if (!el) return;
-    if (this.data.streak.current === 0 && Object.keys(this.data.dailyLogs).length === 0) {
-      el.textContent = '从今天开始 ✨';
-    } else {
-      el.textContent = '🔥 ' + this.data.streak.current + '天';
+    const sidebarEl = document.getElementById('sidebarStreak');
+    if (el) {
+      if (this.data.streak.current === 0 && Object.keys(this.data.dailyLogs).length === 0) {
+        el.textContent = '从今天开始 ✨';
+      } else {
+        el.textContent = '🔥 ' + this.data.streak.current + '天';
+      }
+    }
+    if (sidebarEl) {
+      if (this.data.streak.current === 0 && Object.keys(this.data.dailyLogs).length === 0) {
+        sidebarEl.textContent = '从今天开始';
+      } else {
+        sidebarEl.textContent = this.data.streak.current + ' 天连续学习';
+      }
     }
   }
 
@@ -941,12 +953,15 @@ class App {
         const allPending = phaseDone === 0;
         const statusIcon = allDone ? '✓' : (!allPending ? '●' : '◦');
         const phaseClass = allDone ? 'phase-done' : (!allPending ? 'phase-active' : '');
+        const phaseOpenMap = (this.data.planPhaseOpen && this.data.planPhaseOpen[subId]) || {};
+        const isPhaseOpen = (phase.name in phaseOpenMap) ? phaseOpenMap[phase.name] : (phaseClass === 'phase-active');
 
         html += `<div class="card subject-phase-card ${phaseClass}">`;
-        html += `<div class="phase-header">
+        html += `<button class="phase-header phase-toggle ${isPhaseOpen ? 'open' : ''}" onclick="App.instance.togglePhase('${subId}', '${phase.name}', this)">
           <span class="phase-name">${statusIcon} ${phase.name}</span>
           <span class="phase-period">${phase.period || ''}</span>
-        </div>`;
+          <span class="phase-toggle-arrow">▾</span>
+        </button>`;
 
         html += `<div class="phase-progress-mini">
           <div class="progress-track"><div class="progress-fill math2" style="width:${phasePct}%"></div></div>
@@ -957,7 +972,7 @@ class App {
           html += `<div class="phase-warning">${phase.warning}</div>`;
         }
 
-        html += `<div class="chapter-list-compact">`;
+        html += `<div class="chapter-list-compact${isPhaseOpen ? ' open' : ''}">`;
         phase.chapters.forEach((ch, i) => {
           const gIdx = globalOffset + i;
           const isDone = completed.includes(gIdx);
@@ -995,17 +1010,20 @@ class App {
         const phaseDone = phase.chapters.filter((_, i) => completed.includes(globalOffset + i)).length;
         const phaseTotal = phase.chapters.length;
         const phasePct = phaseTotal > 0 ? Math.round(phaseDone / phaseTotal * 100) : 0;
+        const phaseOpenMap = (this.data.planPhaseOpen && this.data.planPhaseOpen[subId]) || {};
+        const isPhaseOpen = (phase.name in phaseOpenMap) ? phaseOpenMap[phase.name] : (phaseDone > 0 && phaseDone < phaseTotal);
 
         html += `<div class="card subject-phase-card">`;
-        html += `<div class="phase-header">
+        html += `<button class="phase-header phase-toggle ${isPhaseOpen ? 'open' : ''}" onclick="App.instance.togglePhase('${subId}', '${phase.name}', this)">
           <span class="phase-name">📌 ${phase.name}</span>
           <span class="phase-pct">${phaseDone}/${phaseTotal} · ${phasePct}%</span>
-        </div>`;
+          <span class="phase-toggle-arrow">▾</span>
+        </button>`;
         html += `<div class="phase-progress-mini">
           <div class="progress-track"><div class="progress-fill ${subId}" style="width:${phasePct}%"></div></div>
           <span class="phase-pct">${phasePct}%</span>
         </div>`;
-        html += `<div class="chapter-list-compact">`;
+        html += `<div class="chapter-list-compact${isPhaseOpen ? ' open' : ''}">`;
         phase.chapters.forEach((ch, i) => {
           const gIdx = globalOffset + i;
           const isDone = completed.includes(gIdx);
@@ -1058,6 +1076,19 @@ class App {
       body.classList.add('open');
       toggle.classList.add('open');
     }
+  }
+
+  // Per-phase collapse — default: in-progress phase open, rest closed; choice persisted
+  togglePhase(subId, phaseName, btn) {
+    var card = btn.closest('.subject-phase-card');
+    var list = card && card.querySelector('.chapter-list-compact');
+    if (!list) return;
+    var isOpen = list.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    if (!this.data.planPhaseOpen) this.data.planPhaseOpen = {};
+    if (!this.data.planPhaseOpen[subId]) this.data.planPhaseOpen[subId] = {};
+    this.data.planPhaseOpen[subId][phaseName] = isOpen;
+    StorageManager.save(this.data);
   }
 
   // ── Avatar Card (personal dashboard) ─────────────────────
@@ -1128,7 +1159,7 @@ class App {
   }
 
   _getCountdownDays() {
-    var target = new Date('2026-12-19');
+    var target = new Date(EXAM_DATE);
     var today = new Date();
     today.setHours(0, 0, 0, 0);
     return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -1704,7 +1735,7 @@ class App {
   renderCountdown() {
     const el = document.getElementById('countdownBadge');
     if (!el) return;
-    const target = new Date('2026-12-19');
+    const target = new Date(EXAM_DATE);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const diff = target.getTime() - today.getTime();

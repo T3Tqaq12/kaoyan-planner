@@ -1,0 +1,26 @@
+{
+  "name": "考研学习规划",
+  "short_name": "考研规划",
+  "description": "考研四科学习规划 · 西安工业大学",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F5F1",
+  "theme_color": "#F7F5F1",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
